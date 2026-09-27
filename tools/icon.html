@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Icon-Renderer</title>
+  <script type="importmap">{ "imports": { "three": "../vendor/three.module.min.js" } }</script>
+  <style>body { margin: 0; background: #222; }</style>
+</head>
+<body>
+  <!-- Rendert das App-Icon aus den echten 3D-Modellen. Wird von tools/make-icons.mjs benutzt. -->
+  <canvas id="c" width="512" height="512"></canvas>
+  <script type="module">
+    import * as THREE from 'three';
+    import { makeBruno } from '../src/game/models.js';
+
+    const params = new URLSearchParams(location.search);
+    const zoom = +(params.get('zoom') || 1);
+    const canvas = document.getElementById('c');
+    const r = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+    r.setSize(512, 512, false);
+    r.outputColorSpace = THREE.SRGBColorSpace;
+
+    // Hintergrund: Sonne mit Strahlen
+    const bg = document.createElement('canvas');
+    bg.width = bg.height = 512;
+    const ctx = bg.getContext('2d');
+    const gr = ctx.createRadialGradient(256, 230, 20, 256, 256, 360);
+    gr.addColorStop(0, '#fff3a0');
+    gr.addColorStop(0.45, '#ffc53a');
+    gr.addColorStop(1, '#e8641a');
+    ctx.fillStyle = gr;
+    ctx.fillRect(0, 0, 512, 512);
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(256, 230);
+      ctx.lineTo(256 + Math.cos(a) * 500, 230 + Math.sin(a) * 500);
+      ctx.lineTo(256 + Math.cos(a + 0.18) * 500, 230 + Math.sin(a + 0.18) * 500);
+      ctx.fill();
+    }
+    const tex = new THREE.CanvasTexture(bg);
+    tex.colorSpace = THREE.SRGBColorSpace;
+
+    const scene = new THREE.Scene();
+    scene.background = tex;
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x886644, 2.2));
+    const d = new THREE.DirectionalLight(0xffffff, 2.2);
+    d.position.set(2, 3, 4);
+    scene.add(d);
+    const bruno = makeBruno();
+    const rig = bruno.userData.rig;
+    rig.armL.rotation.z = -2.6;
+    rig.armR.rotation.z = 0.5;
+    // Kiki reckt sich aus dem Rucksack und breitet die Flügel aus
+    const kr = rig.kiki.userData.rig;
+    rig.kiki.position.set(0.28, 1.28, -0.5);
+    rig.kiki.rotation.y = -0.4;
+    kr.wingL.rotation.set(0, -0.2, 0.5);
+    kr.wingR.rotation.set(0, 0.2, -0.5);
+    kr.wingL.scale.setScalar(1.4);
+    kr.wingR.scale.setScalar(1.4);
+    bruno.rotation.y = -0.35;
+    scene.add(bruno);
+    const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
+    cam.position.set(0.6, 1.6, 6.4 / zoom);
+    cam.lookAt(0, 1.15, 0);
+    r.render(scene, cam);
+    window.done = true;
+  </script>
+</body>
+</html>
