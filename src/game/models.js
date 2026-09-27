@@ -1,6 +1,6 @@
 // Low-Poly-Figuren aus Grundformen – so wurden viele N64-Charaktere gebaut.
 import * as THREE from 'three';
-import { G, mat, part, pivot } from '../engine/geo.js';
+import { G, mat, part, pivot, mergeGeos } from '../engine/geo.js';
 
 const cap = (r, l, seg = 6) => new THREE.CapsuleGeometry(r, l, 3, seg);
 
@@ -238,13 +238,16 @@ export function makeHedgehog(scale = 1, apron = false) {
   const body = pivot(root, 0, 0, 0);
   part(body, G.sphere(0.5, 12, 10), face, 0, 0.5, 0.05, 0, 0, 0, [0.9, 1, 0.8]);
   part(body, G.sphere(0.55, 12, 10), brown, 0, 0.55, -0.12, 0, 0, 0, [1, 1, 0.9]);
+  const spikes = [];
   for (let i = 0; i < 22; i++) {
     const a = (i / 22) * Math.PI * 2 * 3.1, t = (i % 7) / 7;
     const rx = -0.6 - t * 1.4, ry = Math.sin(a) * 0.9;
-    const s = pivot(body, 0, 0.55, -0.12);
-    s.rotation.set(rx, ry, 0);
-    part(s, G.cone(0.1, 0.45, 4), spike, 0, 0.42, 0);
+    const m = new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(rx, ry, 0))
+      .multiply(new THREE.Matrix4().makeTranslation(0, 0.42, 0));
+    m.premultiply(new THREE.Matrix4().makeTranslation(0, 0.55, -0.12));
+    spikes.push({ geo: G.cone(0.1, 0.45, 4), matrix: m });
   }
+  body.add(new THREE.Mesh(mergeGeos(spikes), spike));
   const head = pivot(body, 0, 0.72, 0.28);
   part(head, G.cone(0.16, 0.4, 8), face, 0, 0, 0.1, Math.PI / 2, 0, 0);
   part(head, G.sphere(0.07, 6, 4), mat(0x222222), 0, 0, 0.5);

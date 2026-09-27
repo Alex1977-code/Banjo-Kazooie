@@ -369,6 +369,6 @@ export function makeTextures() {
     spark: sparkSprite(),
     puff: puffSprite(),
     glow: toTexture(radial(64, [[0, 'rgba(255,255,255,1)'], [0.3, 'rgba(255,255,255,0.55)'], [1, 'rgba(255,255,255,0)']]), { repeat: false }),
-    shadow: toTexture(radial(64, [[0, 'rgba(0,0,0,0.6)'], [0.6, 'rgba(0,0,0,0.45)'], [1, 'rgba(0,0,0,0)']]), { repeat: false }),
+    shadow: toTexture(radial(64, [[0, 'rgba(0,0,0,0.78)'], [0.55, 'rgba(0,0,0,0.62)'], [0.8, 'rgba(0,0,0,0.3)'], [1, 'rgba(0,0,0,0)']]), { repeat: false }),
   };
 }

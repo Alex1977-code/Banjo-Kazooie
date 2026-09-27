@@ -3,38 +3,81 @@ import * as THREE from 'three';
 import {
   makeShard, makeApple, makeBeetle, makeGrimmpilz, makeCrab, makeFogImp, makeLernstein,
 } from './models.js';
-import { G, mat, part } from '../engine/geo.js';
+import { G, mat, part, mergeStatic } from '../engine/geo.js';
 import { damp, dampAngle, clamp } from '../engine/util.js';
 
 // ---------- Blob-Schatten ----------
-let shadowMat = null;
-export class BlobShadow {
-  constructor(level, size = 1) {
-    if (!shadowMat) {
-      shadowMat = new THREE.MeshBasicMaterial({
-        map: level.game.tex.shadow, transparent: true, depthWrite: false,
-        polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, fog: true,
-      });
-    }
-    this.level = level;
-    this.size = size;
-    this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), shadowMat);
+// Alle runden N64-Schatten eines Levels teilen sich ein Instanced-Mesh (1 Draw-Call).
+const _m4 = new THREE.Matrix4();
+const _pos = new THREE.Vector3();
+const _quat = new THREE.Quaternion();
+const _scl = new THREE.Vector3();
+class ShadowPool {
+  constructor(level, max = 160) {
+    const mat = new THREE.MeshBasicMaterial({
+      map: level.game.tex.shadow, transparent: true, depthWrite: false,
+      polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+    });
+    this.mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), mat, max);
     this.mesh.renderOrder = 1;
+    this.mesh.frustumCulled = false;
+    this.free = [];
+    for (let i = max - 1; i >= 0; i--) {
+      this.free.push(i);
+      this.hide(i);
+    }
     level.root.add(this.mesh);
   }
+  alloc() { return this.free.pop() ?? -1; }
+  release(i) {
+    if (i < 0) return;
+    this.hide(i);
+    this.free.push(i);
+  }
+  hide(i) {
+    _m4.makeScale(0, 0, 0);
+    this.mesh.setMatrixAt(i, _m4);
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
+  set(i, x, y, z, s) {
+    if (i < 0) return;
+    _m4.compose(_pos.set(x, y, z), _quat, _scl.set(s, 1, s));
+    this.mesh.setMatrixAt(i, _m4);
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
+}
+
+export class BlobShadow {
+  constructor(level, size = 1) {
+    this.level = level;
+    this.size = size;
+    if (!level.shadowPool) level.shadowPool = new ShadowPool(level);
+    this.pool = level.shadowPool;
+    this.idx = this.pool.alloc();
+    // Kompatibilität: mesh.visible zum Ein-/Ausblenden
+    const self = this;
+    this.mesh = {
+      get visible() { return self.shown !== false; },
+      set visible(v) { self.shown = v; if (!v) self.pool.hide(self.idx); },
+    };
+  }
   update(x, y, z) {
+    if (this.shown === false) return;
     const w = this.level.world;
     const g = w.ground(x, z, y + 0.3).y;
     const wy = w.waterAt(x, z);
     const gy = Math.max(g, wy > -Infinity ? wy : g);
     const h = y - gy;
+    if (h > 25) {
+      this.pool.hide(this.idx);
+      return;
+    }
     const k = clamp(1 - h / 12, 0.25, 1);
-    this.mesh.visible = h < 25;
-    this.mesh.position.set(x, gy + 0.04, z);
-    this.mesh.scale.setScalar(this.size * k);
+    this.pool.set(this.idx, x, gy + 0.04, z, this.size * k);
   }
   remove() {
-    this.level.root.remove(this.mesh);
+    this.pool.release(this.idx);
+    this.idx = -1;
   }
 }
 
@@ -51,6 +94,7 @@ export class Entity {
     this.t = Math.random() * 10;
   }
   setObj(o) {
+    mergeStatic(o);
     this.obj = o;
     o.position.copy(this.pos);
     this.level.root.add(o);
@@ -94,6 +138,7 @@ export class Shard extends Entity {
   reveal() {
     this.hidden = false;
     this.obj.visible = true;
+    this.shadow.mesh.visible = true;
     this.game.particles.emit('sparkle', this.pos.x, this.pos.y, this.pos.z, 30);
     this.game.audio.play('secret');
   }

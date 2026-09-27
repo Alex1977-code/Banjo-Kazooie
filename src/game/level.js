@@ -2,7 +2,7 @@
 // sowie Fabrikmethoden für alle Entities.
 import * as THREE from 'three';
 import { World } from '../engine/collision.js';
-import { Batch, G, M, mat } from '../engine/geo.js';
+import { Batch, G, M, mat, mergeGeos } from '../engine/geo.js';
 import { rng, fbm, lerp } from '../engine/util.js';
 import { Terrain, defaultColorRule } from './terrain.js';
 import {
@@ -94,22 +94,23 @@ export class Level {
     this.skyMesh = sky;
     this.root.add(sky);
     const r = rng(seed);
-    const cloudGroup = new THREE.Group();
-    const cm = new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false, transparent: true, opacity: 0.95 });
+    const cloudParts = [];
+    const tmpObj = new THREE.Object3D();
     for (let i = 0; i < clouds; i++) {
       const a = r() * Math.PI * 2, d = 300 + r() * 150, y = 90 + r() * 90;
-      const c = new THREE.Group();
+      tmpObj.position.set(Math.cos(a) * d, y, Math.sin(a) * d);
+      tmpObj.lookAt(0, y, 0);
+      tmpObj.updateMatrix();
       const n = 3 + Math.floor(r() * 3);
       for (let k = 0; k < n; k++) {
-        const s = new THREE.Mesh(G.sphere(14 + r() * 10, 8, 6), cm);
-        s.position.set((k - n / 2) * 16, r() * 6, r() * 8);
-        s.scale.y = 0.55;
-        c.add(s);
+        const local = M((k - n / 2) * 16, r() * 6, r() * 8, 0, [1, 0.55, 1]);
+        const rad = 14 + r() * 10;
+        cloudParts.push({ geo: G.sphere(rad, 8, 6), matrix: tmpObj.matrix.clone().multiply(local) });
       }
-      c.position.set(Math.cos(a) * d, y, Math.sin(a) * d);
-      c.lookAt(0, y, 0);
-      cloudGroup.add(c);
     }
+    const cm = new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false, transparent: true, opacity: 0.95 });
+    const cloudGroup = new THREE.Group();
+    if (cloudParts.length) cloudGroup.add(new THREE.Mesh(mergeGeos(cloudParts), cm));
     this.root.add(cloudGroup);
     this.clouds = cloudGroup;
     if (sun) {
@@ -121,15 +122,13 @@ export class Level {
     }
     if (mountains != null) {
       // ferner Bergkranz für Tiefe
-      const mg = new THREE.Group();
-      const mm = new THREE.MeshBasicMaterial({ color: mountains, fog: false });
+      const parts = [];
       for (let i = 0; i < 28; i++) {
         const a = (i / 28) * Math.PI * 2 + r() * 0.1, d = 420;
         const h = mountainsH * (0.6 + r() * 0.8);
-        const m = new THREE.Mesh(G.cone(40 + r() * 30, h, 5), mm);
-        m.position.set(Math.cos(a) * d, -10, Math.sin(a) * d);
-        mg.add(m);
+        parts.push({ geo: G.cone(40 + r() * 30, h, 5), matrix: M(Math.cos(a) * d, -10, Math.sin(a) * d) });
       }
+      const mg = new THREE.Mesh(mergeGeos(parts), new THREE.MeshBasicMaterial({ color: mountains, fog: false }));
       this.root.add(mg);
       this.mountains = mg;
     }

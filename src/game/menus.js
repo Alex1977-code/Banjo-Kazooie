@@ -296,6 +296,8 @@ export class Menus {
     const startHost = this.button('Handy als Controller verbinden', async () => {
       hostArea.hidden = false;
       startHost.el.hidden = true;
+      panel.querySelector('.tv-help').hidden = true;
+      if (this.top?.items.includes(back)) this.focusItem(1);
       status.textContent = 'Verbinde mit dem Server ...';
       try {
         const { RemoteHost } = await import('../engine/remote.js');
@@ -317,16 +319,16 @@ export class Menus {
     const back = this.button('Zurück', () => this.pop());
     const panel = h('div', { class: 'panel help', html: `
       <h2>Fernseher & Controller</h2>
+      <div class="tv-help">
       <h3>1. Handy auf den Fernseher streamen</h3>
       <p>Bildschirm spiegeln (Android: „Smart View“/„Übertragen“, iPhone: „AirPlay“ bzw. „Bildschirmsynchronisierung“) und einen Bluetooth-Controller mit dem Handy koppeln. Das Spiel erkennt den Controller automatisch und blendet die Touch-Knöpfe aus.</p>
       <h3>2. Spiel direkt am Fernseher, Handy als Controller</h3>
-      <p>Öffne das Spiel im Browser des Fernsehers, der Konsole oder eines Laptops am HDMI-Anschluss. Dort hier auf „Handy als Controller verbinden“ tippen und den QR-Code mit dem Handy scannen. Controller am Fernseher/PC funktionieren natürlich auch direkt.</p>` });
+      <p>Öffne das Spiel im Browser des Fernsehers, der Konsole oder eines Laptops am HDMI-Anschluss. Dort hier auf „Handy als Controller verbinden“ tippen und den QR-Code mit dem Handy scannen. Controller am Fernseher/PC funktionieren natürlich auch direkt.</p>
+      </div>` });
     const menu = h('div', { class: 'menu' }, startHost.el, back.el);
     panel.append(hostArea, menu);
-    if (g.remote?.code) {
-      startHost.act();
-    }
     this.push(this.screen({ items: [startHost, back], back: () => this.pop(), content: [panel] }));
+    if (g.remote?.code) startHost.act();
   }
 
   // ---------- Abspann ----------

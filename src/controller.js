@@ -1,7 +1,7 @@
 // Handy-Controller: schickt Touch-Eingaben per WebRTC an das Spiel am Fernseher.
 import { VirtualPad } from './engine/input.js';
 import { TouchControls } from './engine/touch.js';
-import { PEER_PREFIX, loadScript } from './engine/remote.js';
+import { PEER_PREFIX, loadScript, peerOptions } from './engine/remote.js';
 
 const $ = (s) => document.querySelector(s);
 const statusEl = $('#status');
@@ -30,7 +30,7 @@ async function connect() {
   }
   /* global Peer */
   if (peer) peer.destroy();
-  peer = new Peer({ debug: 0 });
+  peer = new Peer({ debug: 0, ...peerOptions() });
   peer.on('error', (err) => {
     statusEl.textContent = err.type === 'peer-unavailable'
       ? 'Kein Spiel mit diesem Code gefunden. Stimmt der Code?'

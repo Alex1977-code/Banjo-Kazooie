@@ -47,6 +47,18 @@ export class TouchControls {
     }
   }
 
+  // Während Dialogen/Cutscenes: Knöpfe ausblenden, jeder Tipp blättert weiter
+  setDialogMode(on) {
+    if (this.dialogMode === on) return;
+    this.dialogMode = on;
+    this.root.classList.toggle('dialog-mode', on);
+    if (on) {
+      this.stickId = null;
+      this.base.hidden = true;
+      this.pad.mx = this.pad.my = 0;
+    }
+  }
+
   setLabel(which, text) {
     if (which === 'B' && this.btnB.textContent !== text) this.btnB.textContent = text;
   }
@@ -74,6 +86,10 @@ export class TouchControls {
     this.pad.touch();
     this.root.setPointerCapture?.(e.pointerId);
     const btn = this.btnAt(e.clientX, e.clientY);
+    if (this.dialogMode && !btn?.classList.contains('tbtn-pause')) {
+      this.pad.tapped |= B.JUMP;
+      return;
+    }
     if (btn) {
       this.pointers.set(e.pointerId, { kind: 'btn', btn });
       this.recomputeHeld();

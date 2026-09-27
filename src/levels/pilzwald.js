@@ -36,13 +36,14 @@ export default {
     T.pit(SWAMP.x, SWAMP.z, SWAMP.r - 3, -2.4, 4);
     T.plateau(ISLAND.x, ISLAND.z, 4, 0.3, 1.5, 'set');
     T.plateau(42, -2, 4.5, 7, 1.2);
+    T.plateau(28, 3, 2.5, 0.3, 2, 'set');
     T.pit(HOLLOW.x, HOLLOW.z, 7, -1.5, 5);
     T.plateau(0, 64, 6, 0.5, 4, 'set');
     T.plateau(OAK.x, OAK.z, 12, 0.5, 5, 'set');
     const dirt = 0x8a6a4a;
     T.path([[0, 62], [0, 40], [4, 20], [0, 4]], 3, dirt);
     T.path([[4, 30], [MOM.x, MOM.z]], 2.4, dirt);
-    T.path([[4, 20], [20, 12], [30, 10]], 2.4, dirt);
+    T.path([[4, 20], [20, 12], [32, 8]], 2.4, dirt);
     T.path([[0, 4], [20, -20], [CLEARING.x, CLEARING.z]], 2.4, dirt);
     T.path([[0, 4], [-20, -20], [HOLLOW.x, HOLLOW.z]], 2.4, dirt);
     T.path([[0, 30], [-24, 12]], 2.4, dirt);
@@ -96,7 +97,7 @@ export default {
       const a = (i / 6) * Math.PI * 2 + 0.3;
       L.add(G.cyl(0.5, 1.4, 5, 6), M(OAK.x + Math.cos(a) * 5.5, oy - 0.8, OAK.z + Math.sin(a) * 5.5, 0, 1, Math.sin(a) * 0.9, -Math.cos(a) * 0.9), 0x7a5a3a, 'bark', 0.5);
     }
-    L.world.addCyl({ x: OAK.x, z: OAK.z, y: oy - 1, r: OAK.r, h: 29.5 });
+    L.world.addCyl({ x: OAK.x, z: OAK.z, y: oy - 1, r: OAK.r, h: 28.5 });
     // Baumpilz-Stufen spiralförmig nach oben
     const steps = 13;
     const stepPos = [];
@@ -145,18 +146,18 @@ export default {
     L.firefly('f1', OAK.x - 2, null, OAK.z - OAK.r - 2.5);
 
     // ---------- Hüpfpilze zur schwebenden Insel ----------
-    L.bouncer(31, 10, { power: 22, r: 1.8, h: 1.6, color: 0xe23b6b });
-    L.bouncer(42, -2, { y: 7, power: 24, r: 1.7, h: 1.4, color: 0x3b8be2 });
-    L.mushroomDeco(37, 9, { h: 4, r: 2.2, color: 0xd8a02a });
-    L.firefly('f5', 37, null, 9);
-    const isl = { x: 54, z: -16, y: 15 };
+    L.bouncer(34, 6, { power: 24, r: 1.8, h: 0.9, color: 0xe23b6b });
+    L.bouncer(42, -2, { y: 7, power: 24, r: 1.7, h: 0.8, color: 0x3b8be2 });
+    L.mushroomDeco(27, 3, { h: 4, r: 2.2, color: 0xd8a02a });
+    L.firefly('f5', 27, null, 3);
+    const isl = { x: 52, z: -13, y: 15 };
     L.add(G.rock(4.5, 17), M(isl.x, isl.y - 3, isl.z, 0, [1, 0.8, 1]), 0x7a7288, 'rock', 0.4, { flat: true });
     L.add(G.cyl(4.3, 4.0, 0.6, 10), M(isl.x, isl.y - 0.6, isl.z), 0x4f9a3a, 'ground', 0.4);
     L.world.addCyl({ x: isl.x, z: isl.z, y: isl.y - 4, r: 4.2, h: 4 });
     L.shard('insel', isl.x, isl.y + 1.4, isl.z);
     L.mushroomDeco(isl.x + 2, isl.z + 1.5, { y: isl.y, h: 1.2, r: 0.8, color: 0xff5a5a, collide: false });
-    L.berryArc(31, 10, 42, -2, 5, 5, 3);
-    L.berryArc(42, -2, 54, -16, 6, 7, 8);
+    L.berryArc(34, 6, 42, -2, 5, 5, 3);
+    L.berryArc(42, -2, 52, -13, 6, 7, 8.5);
 
     // ---------- Käferlichtung ----------
     let beetlesLeft = 5;
@@ -198,7 +199,8 @@ export default {
       const stupsi = L.follower(makeHedgehog(0.55), HOLLOW.x + 2, HOLLOW.z, { who: 'stupsi', talk: (g) => stupsiTalk(L, g, stupsi) });
       L.stupsi = stupsi;
       stupsi.onFollow = (s) => {
-        if (!s.reunited && Math.hypot(s.pos.x - MOM.x, s.pos.z - MOM.z) < 5) {
+        const pl = L.game.player.pos;
+        if (!s.reunited && (Math.hypot(s.pos.x - MOM.x, s.pos.z - MOM.z) < 7 || Math.hypot(pl.x - MOM.x, pl.z - MOM.z) < 5)) {
           s.reunited = true;
           reunion(L, s, momShard);
         }

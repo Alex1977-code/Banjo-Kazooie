@@ -4,6 +4,23 @@
 
 export const PEER_PREFIX = 'bruno-kiki-tv-';
 
+// Optional eigener PeerJS-Server: ?peer=host:port oder ?peer=https://host/pfad
+export function peerOptions() {
+  const v = new URLSearchParams(location.search).get('peer');
+  if (!v) return {};
+  try {
+    const u = new URL(v.includes('://') ? v : `${location.protocol}//${v}`);
+    return {
+      host: u.hostname,
+      port: +u.port || (u.protocol === 'https:' ? 443 : 80),
+      path: u.pathname || '/',
+      secure: u.protocol === 'https:',
+    };
+  } catch {
+    return {};
+  }
+}
+
 const loaded = new Map();
 export function loadScript(src) {
   if (!loaded.has(src)) {
@@ -63,7 +80,7 @@ export class RemoteHost {
   open(code) {
     /* global Peer */
     this.code = code;
-    const peer = new Peer(PEER_PREFIX + code, { debug: 0 });
+    const peer = new Peer(PEER_PREFIX + code, { debug: 0, ...peerOptions() });
     this.peer = peer;
     peer.on('open', () => this.announce());
     peer.on('connection', (conn) => this.attach(conn));
@@ -80,7 +97,8 @@ export class RemoteHost {
 
   controllerUrl() {
     const u = new URL('controller.html', location.href);
-    u.search = '';
+    const peer = new URLSearchParams(location.search).get('peer');
+    u.search = peer ? `?peer=${encodeURIComponent(peer)}` : '';
     u.hash = this.code;
     return u.toString();
   }

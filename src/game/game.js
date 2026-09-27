@@ -160,7 +160,7 @@ export class Game {
     this.renderer.setAtmosphere(def.atmosphere(L, this));
     this.underwater = false;
     this.hud.setBoss(null);
-    this.playerShadow = new BlobShadow(L, 1.3);
+    this.playerShadow = new BlobShadow(L, 1.5);
 
     const sp = L.spawns[spawnName] || L.spawns.start;
     const y = sp.y ?? L.world.ground(sp.x, sp.z, 999).y;
@@ -214,8 +214,7 @@ export class Game {
       const front = new THREE.Vector3(p.pos.x + Math.sin(f) * 5, p.pos.y + 2, p.pos.z + Math.cos(f) * 5);
       await this.camTo(front, p.pos.clone().setY(p.pos.y + 1.2), 0.5);
       await this.wait(1.8);
-      p.setState('idle');
-      if (this.player.onGround === false) p.setState('fall');
+      p.setState(p.diving ? 'dive' : p.swimming ? 'swim' : p.onGround ? 'idle' : 'fall');
       await L.def.onShard?.(L, this, shard.id);
     });
     for (const e of L.entities) if (e.refresh) e.refresh();
@@ -290,6 +289,21 @@ export class Game {
       await this.fade(false);
       this.dying = false;
     }, 1800);
+  }
+
+  // Nach Gefahrenzonen: kurz ausblenden und am letzten sicheren Punkt weiter
+  async returnToSafe() {
+    if (this.falling || this.dying) return;
+    this.falling = true;
+    const p = this.player;
+    p.vel.set(0, 8, 0);
+    await this.wait(0.35);
+    await this.fade(true);
+    p.spawn(p.lastSafe.x, p.lastSafe.y + 0.1, p.lastSafe.z, p.facing);
+    p.invuln = 1.5;
+    this.camRig.snapBehind(p);
+    await this.fade(false);
+    this.falling = false;
   }
 
   async onPlayerFall() {
@@ -396,6 +410,7 @@ export class Game {
     this.prompt = this.cinematic || !this.player.onGround ? null : this.promptCand;
     this.hud.setPrompt(this.prompt ? this.prompt.label : null, this.input.device === 'gamepad' ? 'B' : this.input.device === 'keyboard' ? 'J' : 'B');
     this.touch.setLabel('B', this.prompt ? this.prompt.label : 'Angriff');
+    this.touch.setDialogMode(this.cinematic);
     this.hud.setAir(this.player.air, this.player.diving || this.player.air < 0.99);
 
     if (this.saveDirtyT > 0 && (this.saveDirtyT -= dt) <= 0) this.save.write();

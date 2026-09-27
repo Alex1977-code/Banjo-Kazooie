@@ -234,3 +234,59 @@ export function pivot(parent, x = 0, y = 0, z = 0) {
   parent.add(g);
   return g;
 }
+
+// Mehrere (transformierte) Geometrien zu einer zusammenfügen.
+// items: [{ geo, matrix }] – Ergebnis ist nicht-indiziert mit position/normal/uv.
+export function mergeGeos(items) {
+  const parts = items.map(({ geo, matrix }) => {
+    const g = geo.index ? geo.toNonIndexed() : geo.clone();
+    if (!g.attributes.normal) g.computeVertexNormals();
+    if (matrix) g.applyMatrix4(matrix);
+    return g;
+  });
+  let n = 0;
+  for (const g of parts) n += g.attributes.position.count;
+  const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), uv = new Float32Array(n * 2);
+  let o = 0;
+  for (const g of parts) {
+    const c = g.attributes.position.count;
+    pos.set(g.attributes.position.array, o * 3);
+    nor.set(g.attributes.normal.array, o * 3);
+    if (g.attributes.uv) uv.set(g.attributes.uv.array, o * 2);
+    o += c;
+    g.dispose();
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  out.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  out.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  out.computeBoundingSphere();
+  return out;
+}
+
+// Fasst in einem Modell alle Geschwister-Meshes mit gleichem Material zusammen.
+// Animierte Gelenke (Gruppen) bleiben erhalten, es werden nur Draw-Calls gespart.
+export function mergeStatic(root) {
+  const nodes = [];
+  root.traverse((n) => { if (!n.isMesh) nodes.push(n); });
+  for (const node of nodes) {
+    const byMat = new Map();
+    for (const c of node.children) {
+      if (!c.isMesh || c.children.length || Array.isArray(c.material) || !c.visible || c.renderOrder) continue;
+      if (!c.geometry.attributes.uv) continue;
+      let l = byMat.get(c.material);
+      if (!l) byMat.set(c.material, (l = []));
+      l.push(c);
+    }
+    for (const [material, list] of byMat) {
+      if (list.length < 2) continue;
+      const geo = mergeGeos(list.map((m) => {
+        m.updateMatrix();
+        return { geo: m.geometry, matrix: m.matrix };
+      }));
+      for (const m of list) node.remove(m);
+      node.add(new THREE.Mesh(geo, material));
+    }
+  }
+  return root;
+}

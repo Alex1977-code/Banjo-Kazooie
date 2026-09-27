@@ -72,23 +72,32 @@ export default {
       if (!firstStep) firstStep = [x, z];
     }
     const topY = ly + rise * steps;
-    L.add(G.cyl(5.4, 5.4, 0.5, 16), M(LIGHT.x, topY - 0.5, LIGHT.z), 0x8a8a8a, 'stone');
-    L.world.addCyl({ x: LIGHT.x, z: LIGHT.z, y: topY - 0.5, r: 5.4, h: 0.5, camBlock: false });
+    // Balkon mit Luke, durch die die Treppe nach oben führt (von unten durchlässig)
+    const lastA = -Math.PI * 0.75 + (steps - 1) * 0.4;
+    const gapFrom = lastA - 1.75, gapTo = lastA + 0.15;
+    const inGap = (a) => {
+      const d = Math.atan2(Math.sin(a - (gapFrom + gapTo) / 2), Math.cos(a - (gapFrom + gapTo) / 2));
+      return Math.abs(d) < (gapTo - gapFrom) / 2;
+    };
+    const thetaStart = Math.PI / 2 - gapFrom;
+    const ringGeo = new THREE.CylinderGeometry(5.4, 5.4, 0.5, 20, 1, false, thetaStart, Math.PI * 2 - (gapTo - gapFrom)).translate(0, 0.25, 0);
+    L.add(ringGeo, M(LIGHT.x, topY - 0.5, LIGHT.z), 0x8a8a8a, 'stone');
+    L.world.addCyl({ x: LIGHT.x, z: LIGHT.z, y: topY - 0.5, r: 5.4, h: 0.5, camBlock: false, solid: false });
     L.add(G.cyl(2.2, 2.2, 3.2, 10), M(LIGHT.x, topY, LIGHT.z), 0xfff6c0, 'plain');
     L.add(G.cone(2.8, 2.2, 10), M(LIGHT.x, topY + 3.2, LIGHT.z), 0xd83a2a, 'tiles');
     L.world.addCyl({ x: LIGHT.x, z: LIGHT.z, y: topY, r: 2.2, h: 5.4 });
-    for (let i = 0; i < 16; i++) {
-      const a = (i / 16) * Math.PI * 2;
+    for (let i = 0; i < 20; i++) {
+      const a = (i / 20) * Math.PI * 2;
+      if (inGap(a)) continue;
       L.add(G.cyl(0.06, 0.06, 1, 4), M(LIGHT.x + Math.cos(a) * 5.2, topY, LIGHT.z + Math.sin(a) * 5.2), 0x333333, 'plain');
     }
-    L.add(G.torus(5.2, 0.07, 3, 24), M(LIGHT.x, topY + 1, LIGHT.z, 0, 1, Math.PI / 2), 0x333333, 'plain');
     const beam = new THREE.Mesh(new THREE.ConeGeometry(3, 26, 12, 1, true).rotateZ(Math.PI / 2).translate(13, 0, 0), new THREE.MeshBasicMaterial({
       color: 0xfff6b0, transparent: true, opacity: 0.18, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
     }));
     beam.position.set(LIGHT.x, topY + 1.6, LIGHT.z);
     L.root.add(beam);
     L.animated.push((dt, t) => { beam.rotation.y = t * 0.6; });
-    L.shard('leuchtturm', LIGHT.x + 3.6, topY + 1.3, LIGHT.z + 1.5);
+    L.shard('leuchtturm', LIGHT.x + Math.cos(lastA + 2.4) * 3.8, topY + 1.3, LIGHT.z + Math.sin(lastA + 2.4) * 3.8);
     L.firefly('f1', LIGHT.x + Math.cos(-Math.PI * 0.75 + 20 * 0.4) * 4.4, ly + rise * 21 + 1.4, LIGHT.z + Math.sin(-Math.PI * 0.75 + 20 * 0.4) * 4.4);
     L.sign(24, -18, -0.9, 'Leuchtturm', '');
     void firstStep;
@@ -217,7 +226,7 @@ export default {
     L.apple(-4, 20);
     L.apple(30, -24);
     L.apple(-20, -30);
-    L.apple(LIGHT.x - 3, LIGHT.z + 3, topY);
+    L.apple(LIGHT.x + Math.cos(lastA + 3.6) * 3.8, LIGHT.z + Math.sin(lastA + 3.6) * 3.8, topY);
 
     // ---------- Glühwürmchen ----------
     L.firefly('f4', -16, null, -14);
@@ -367,6 +376,12 @@ class Knack extends Entity {
     const dx = p.pos.x - this.pos.x, dz = p.pos.z - this.pos.z;
     const d = Math.hypot(dx, dz) || 1;
     let speed = 0;
+    if (this.state === 'dead') {
+      this.obj.scale.setScalar(Math.max(0.01, 2.3 * (1 - this.st)));
+      this.obj.rotation.y += dt * 12;
+      if (this.st > 1) this.finish();
+      return;
+    }
     if (!this.active) {
       rig.claws.forEach((c, i) => { c.rotation.x = Math.sin(this.t * 2 + i) * 0.2; });
     } else if (this.state === 'walk') {
@@ -405,11 +420,6 @@ class Knack extends Entity {
         this.pos.y = this.baseY;
         this.set('walk');
       }
-    } else if (this.state === 'dead') {
-      this.obj.scale.setScalar(Math.max(0.01, 2.3 * (1 - this.st)));
-      this.obj.rotation.y += dt * 12;
-      if (this.st > 1) this.finish();
-      return;
     }
     if (this.state !== 'stuck') rig.body.rotation.z = Math.sin(this.t * 14) * 0.06 * (speed ? 1 : 0);
     if (speed) {
@@ -471,6 +481,7 @@ class Knack extends Entity {
   }
 
   async finish() {
+    if (!this.alive) return;
     this.remove();
     const g = this.game;
     g.audio.playMusic('beach');

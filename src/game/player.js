@@ -1,6 +1,7 @@
 // Bruno & Kiki: Steuerung, Physik und Animation.
 import * as THREE from 'three';
 import { makeBruno } from './models.js';
+import { mergeStatic } from '../engine/geo.js';
 import { B } from '../engine/input.js';
 import { clamp, damp, dampAngle, lerp } from '../engine/util.js';
 
@@ -16,7 +17,7 @@ const ABOVE = new THREE.Vector3(0, 2.45, 0.05);
 export class Player {
   constructor(game) {
     this.game = game;
-    this.model = makeBruno();
+    this.model = mergeStatic(makeBruno());
     this.rig = this.model.userData.rig;
     this.pos = new THREE.Vector3();
     this.vel = new THREE.Vector3();
@@ -251,8 +252,11 @@ export class Player {
       this.groundCol = null;
     }
 
+    // Gefahrenzonen (z.B. Giftsumpf)
+    const hz = game.level.hazardAt?.(this.pos.x, this.pos.y, this.pos.z);
+
     // Sicherer Punkt zum Wiederbeleben
-    if (this.onGround && !this.swimming && (!this.groundCol || !this.groundCol.dx) && this.state !== 'hurt') {
+    if (this.onGround && !hz && !this.swimming && (!this.groundCol || !this.groundCol.dx) && this.state !== 'hurt') {
       this.safeT += dt;
       if (this.safeT > 0.4 && world.terrainHeight(this.pos.x, this.pos.z) > waterY - 0.8 && !this.groundCol?.hazard) {
         this.lastSafe.copy(this.pos);
@@ -260,10 +264,9 @@ export class Player {
       }
     } else if (!this.onGround) this.safeT = 0;
 
-    // Gefahrenzonen
-    const hz = game.level.hazardAt?.(this.pos.x, this.pos.y, this.pos.z);
     if ((hz || (this.onGround && this.groundCol?.hazard)) && this.invuln <= 0) {
-      if (this.hurt(this.pos) && this.health > 0) this.bounce(12);
+      // Autsch – zurück ans sichere Ufer
+      if (this.hurt(this.pos) && this.health > 0) game.returnToSafe();
     }
 
     // In den Abgrund gefallen
