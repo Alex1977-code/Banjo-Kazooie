@@ -1,7 +1,7 @@
 // Alles, was im Level lebt: Sammelobjekte, NPCs, Gegner, Tore, Schalter ...
 import * as THREE from 'three';
 import {
-  makeShard, makeApple, makeBeetle, makeGrimmpilz, makeCrab, makeFogImp, makeLernstein,
+  makeShard, makeApple, makeBeetle, makeGrimmpilz, makeCrab, makeCactus, makeLernstein, makeFirefly,
 } from './models.js';
 import { G, mat, part, mergeStatic } from '../engine/geo.js';
 import { damp, dampAngle, clamp } from '../engine/util.js';
@@ -164,17 +164,16 @@ export class Firefly extends Entity {
     this.id = id;
     this.key = `${level.id}:${id}`;
     this.home = this.pos.clone();
-    const g = new THREE.Group();
-    part(g, G.sphere(0.14, 8, 6), mat(0x3a2a18), 0, 0, 0, 0, 0, 0, [1, 1, 1.4]);
-    part(g, G.sphere(0.13, 8, 6), mat(0xeaff7a, { emissive: 0xaacc22 }), 0, -0.02, -0.18);
-    for (const s of [-1, 1]) part(g, G.sphere(0.12, 6, 4), mat(0xddeeff, { transparent: true, opacity: 0.6 }), s * 0.12, 0.1, 0, 0, 0, 0, [1, 0.2, 0.6]);
+    const g = makeFirefly();
     const glow = new THREE.Sprite(new THREE.SpriteMaterial({
-      map: this.game.tex.glow, color: 0xd6ff5a, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+      map: this.game.tex.glow, color: 0xffe07a, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
     }));
-    glow.scale.setScalar(1.6);
+    glow.position.y = -0.1;
+    glow.scale.setScalar(1.8);
     g.add(glow);
     this.glow = glow;
     this.setObj(g);
+    this.wings = g.userData.rig.wings;
     this.callT = 0;
   }
   update(dt) {
@@ -182,7 +181,12 @@ export class Firefly extends Entity {
     const t = this.t;
     this.pos.set(this.home.x + Math.sin(t * 0.9) * 0.9, this.home.y + Math.sin(t * 1.7) * 0.35, this.home.z + Math.cos(t * 1.3) * 0.9);
     this.obj.position.copy(this.pos);
-    this.obj.rotation.y = t * 1.5;
+    // dem Spieler zuwenden, damit man das Gesicht sieht
+    const pl = this.player.pos;
+    this.obj.rotation.y = Math.atan2(pl.x - this.pos.x, pl.z - this.pos.z);
+    const f = Math.sin(t * 38) * 0.6;
+    this.wings[0].rotation.z = f;
+    this.wings[1].rotation.z = -f;
     this.glow.material.opacity = 0.6 + Math.sin(t * 6) * 0.4;
     const d = this.distPlayer();
     this.callT -= dt;
@@ -385,7 +389,7 @@ export class Lernstein extends Entity {
     const learned = g.save.data.moves[this.move];
     if (!learned) {
       g.audio.play('learn');
-      await g.dialog.say([{ who: 'stein', name: 'Lernstein', text: `Ein alter Lernstein! Er leuchtet ... Tildas Stimme ertönt:` }, ...this.lines]);
+      await g.dialog.say([{ who: 'stein', name: 'Lernstein', text: `Ein alter Lernstein! Er leuchtet ... Opa Tilos Stimme ertönt:` }, ...this.lines]);
       g.save.data.moves[this.move] = true;
       g.save.write();
       g.audio.play('learn');
@@ -553,8 +557,28 @@ export class Enemy extends Entity {
 
 export class Beetle extends Enemy {
   constructor(level, x, z, o = {}) {
-    super(level, x, z, { model: makeBeetle(o.color), speed: 2.2, radius: 0.7, height: 0.9, ...o });
-    this.popColor = [0.6, 0.5, 0.8];
+    super(level, x, z, { model: makeBeetle(), speed: 2.2, radius: 0.7, height: 0.9, ...o });
+    this.popColor = [1, 0.6, 0.35];
+  }
+  animate() {
+    super.animate();
+    const f = Math.sin(this.t * (this.chasing ? 40 : 6)) * (this.chasing ? 0.5 : 0.08);
+    this.rig.wings[0].rotation.z = f;
+    this.rig.wings[1].rotation.z = -f;
+  }
+}
+
+// Kaktus-Bandit: stachelig (draufspringen tut weh), braucht zwei Treffer
+export class Cactus extends Enemy {
+  constructor(level, x, z, o = {}) {
+    super(level, x, z, { model: makeCactus(), hp: 2, speed: 2.4, radius: 0.6, height: 1.9, chase: 10, stompable: false, ...o });
+    this.popColor = [0.5, 0.85, 0.3];
+  }
+  animate() {
+    super.animate();
+    const r = this.rig;
+    r.legs.forEach((l, i) => { l.rotation.x = Math.sin(this.t * 10 + i * Math.PI) * 0.5 * (this.moving ? 1 : 0); });
+    r.armL.rotation.x = r.armR.rotation.x = this.chasing ? -0.6 + Math.sin(this.t * 12) * 0.3 : 0;
   }
 }
 
@@ -590,30 +614,6 @@ export class Crab extends Enemy {
     r.claws.forEach((c, i) => { c.rotation.x = Math.sin(this.t * 6 + i) * 0.3 - 0.2; });
     r.body.rotation.z = Math.sin(this.t * 12) * 0.08 * (this.moving ? 1 : 0.2);
     this.obj.rotation.y = this.facing + Math.PI / 2; // seitwärts laufen
-  }
-}
-
-export class FogImp extends Enemy {
-  constructor(level, x, y, z, o = {}) {
-    super(level, x, z, { model: makeFogImp(), speed: 3.2, radius: 0.6, height: 1, chase: 30, wander: 30, y, ...o });
-    this.flying = true;
-    this.popColor = [0.8, 0.8, 0.9];
-  }
-  ai(dt) {
-    const p = this.player.pos;
-    const tx = p.x - this.pos.x, tz = p.z - this.pos.z;
-    const d = Math.hypot(tx, tz);
-    if (d > 0.5) {
-      this.facing = dampAngle(this.facing, Math.atan2(tx, tz), 3, dt);
-      this.pos.x += Math.sin(this.facing) * this.speed * dt;
-      this.pos.z += Math.cos(this.facing) * this.speed * dt;
-    }
-    this.pos.y = damp(this.pos.y, p.y + 0.4 + Math.sin(this.t * 3) * 0.3, 2, dt);
-    this.moving = 1;
-    if (Math.random() < dt * 5) this.game.particles.emit('fog', this.pos.x, this.pos.y, this.pos.z, 1);
-  }
-  animate() {
-    this.rig.body.rotation.z = Math.sin(this.t * 4) * 0.2;
   }
 }
 

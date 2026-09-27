@@ -167,12 +167,14 @@ const SONGS = {
 const VOICES = {
   bruno: { base: 150, type: 'sawtooth', spread: 0.25, formant: 900 },
   kiki: { base: 620, type: 'square', spread: 0.35, formant: 2400 },
-  tilda: { base: 260, type: 'triangle', spread: 0.15, formant: 1200 },
-  nebelbart: { base: 95, type: 'sawtooth', spread: 0.4, formant: 700 },
+  tilo: { base: 200, type: 'triangle', spread: 0.15, formant: 1000 },
+  koenig: { base: 105, type: 'sawtooth', spread: 0.35, formant: 600 },
+  pilz: { base: 520, type: 'square', spread: 0.25, formant: 2000 },
+  lotti: { base: 380, type: 'triangle', spread: 0.3, formant: 1600 },
   igel: { base: 420, type: 'square', spread: 0.25, formant: 1800 },
   stupsi: { base: 700, type: 'square', spread: 0.3, formant: 2600 },
   eiche: { base: 70, type: 'sawtooth', spread: 0.12, formant: 500 },
-  pedro: { base: 330, type: 'sawtooth', spread: 0.45, formant: 1500 },
+  kapitaen: { base: 150, type: 'sawtooth', spread: 0.3, formant: 900 },
   knack: { base: 180, type: 'square', spread: 0.3, formant: 1000 },
   stein: { base: 300, type: 'sine', spread: 0.1, formant: 1400 },
   default: { base: 300, type: 'square', spread: 0.3, formant: 1500 },
@@ -384,6 +386,20 @@ export class Audio {
         break;
       case 'zap':
         this.osc('sawtooth', 1200, 200, t, 0.35, 0.12, d, { filter: { f: 3000 } });
+        break;
+      case 'croak': {
+        // tiefes, knarziges "Quaaak"
+        const o = this.osc('sawtooth', 190, 120, t, 0.55, 0.28, d, { filter: { f: 700 }, q: 4, curve: 'lin' });
+        this.vibrato(o, t, 0.55, 22, 25);
+        this.osc('square', 95, 70, t, 0.5, 0.12, d, { filter: { f: 400 } });
+        break;
+      }
+      case 'coin':
+        this.osc('sine', 1760, 1760, t, 0.18, 0.1, d);
+        this.osc('sine', 2640, 2640, t + 0.05, 0.25, 0.08, d);
+        break;
+      case 'buy':
+        [72, 76, 79, 84, 88].forEach((n, i) => this.osc('square', midiFreq(n), midiFreq(n), t + i * 0.06, 0.12, 0.08, d, { filter: { f: 3000 } }));
         break;
       case 'sneeze':
         this.noise(t, 0.35, 0.12, d, { f: 900, f1: 1800, q: 2, attack: 0.3 });

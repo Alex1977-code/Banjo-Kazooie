@@ -1,9 +1,9 @@
-// Muschelbucht: Sonnige Insel mit Leuchtturm, Schiffswrack, Piraten-Pelikan
+// Muschelbucht: Sonnige Insel mit Leuchtturm, Schiffswrack, Käpt'n Barnabas, Kaktus-Banditen
 // und dem grantigen Käpt'n Knack.
 import * as THREE from 'three';
 import { G, M, mat, part } from '../engine/geo.js';
 import { defaultColorRule } from '../game/terrain.js';
-import { makePelican, makeCrab } from '../game/models.js';
+import { makeCaptain, makeCrab } from '../game/models.js';
 import { Entity, BlobShadow } from '../game/entities.js';
 import { rng, fbm, damp, dampAngle, lerp } from '../engine/util.js';
 
@@ -162,10 +162,10 @@ export default {
     }
     L.lernstein(-14, -33, {
       move: 'dive', title: 'Tauchen', facing: Math.PI + 0.4,
-      lines: [{ who: 'tilda', text: 'Tauchen! Drück im Wasser Z, um abzutauchen. Mit A schwimmst du nach oben, mit Z oder B tiefer. Behalte deine Luft im Auge – an der Oberfläche füllt sie sich wieder auf!' }],
+      lines: [{ who: 'tilo', text: 'Tauchen! Drück im Wasser Z, um abzutauchen. Mit A schwimmst du nach oben, mit Z oder B tiefer. Behalte deine Luft im Auge – an der Oberfläche füllt sie sich wieder auf!' }],
     });
 
-    // ---------- Pedros Steg & Schatzsuche ----------
+    // ---------- Käpt'n Barnabas' Steg & Schatzsuche ----------
     const pierY = 1.3;
     for (let i = 0; i < 6; i++) {
       const x = PIER.x - 4 + i * 1.8, z = PIER.z - 4 + i * 1.8;
@@ -173,11 +173,10 @@ export default {
       if (i % 2 === 0) for (const sx of [-1, 1]) L.add(G.cyl(0.18, 0.18, 6, 5), M(x + sx * 1.1, -4.5, z - sx * 1.1), 0x6a4a2a, 'bark');
     }
     L.world.addBox({ x: PIER.x + 0.5, z: PIER.z + 0.5, y: pierY - 3, w: 3, h: 3, d: 11.5, rot: Math.PI / 4, camBlock: false });
-    const pedroPos = [PIER.x + 4, PIER.z + 4];
-    const schatzShard = L.shard('schatz', pedroPos[0] - 1.5, pierY + 1.3, pedroPos[1] - 2.5, { hidden: true });
+    const capPos = [PIER.x + 4, PIER.z + 4];
+    const schatzShard = L.shard('schatz', capPos[0] - 1.5, pierY + 1.3, capPos[1] - 2.5, { hidden: true });
     let xLeft = 3;
-    const pedro = L.npc(makePelican(), pedroPos[0], pedroPos[1], { y: pierY, who: 'pedro', facing: -Math.PI * 0.75, talk: (g) => pedroTalk(L, g, xLeft) });
-    void pedro;
+    L.npc(makeCaptain(), capPos[0], capPos[1], { y: pierY, who: 'kapitaen', facing: -Math.PI * 0.75, talk: (g) => captainTalk(L, g) });
     for (const [x, z] of [[-6, 8], [24, -6], [-36, -6]]) {
       L.poundSpot(x, z, {
         kind: 'x',
@@ -188,7 +187,7 @@ export default {
           if (xLeft > 0) g.toast(`Schatz-Markierung gefunden! Noch ${xLeft}`);
           else {
             g.cutscene(async () => {
-              await g.say([{ who: 'pedro', text: 'Arrr! Ich hab es bis hierher gehört! Das war die letzte Markierung! Kommt her, ihr Landratten, der Schatz ist geborgen!' }]);
+              await g.say([{ who: 'kapitaen', text: 'Donnerwetter! Ich hab es bis hierher gehört! Das war die letzte Markierung! Kommt her, ihr Landratten, der Schatz ist geborgen!' }]);
               await g.camTo([schatzShard.pos.x + 5, schatzShard.pos.y + 3, schatzShard.pos.z - 5], schatzShard.pos, 0.8);
               schatzShard.reveal();
               await g.wait(1);
@@ -226,9 +225,21 @@ export default {
     // ---------- Gegner & Äpfel ----------
     L.crab(14, 14, { wander: 6 });
     L.crab(-24, -22, { wander: 6 });
-    L.crab(26, -12, { wander: 5 });
-    L.crab(-12, 26, { wander: 5 });
     L.crab(4, -34, { wander: 5 });
+    // Kaktus-Banditen treiben sich auf dem trockenen Hügel herum
+    L.cactus(-12, -10, { wander: 6 });
+    L.cactus(-22, -18, { wander: 6 });
+    L.cactus(12, -20, { wander: 5 });
+    for (const [x, z, h] of [[-8, -18, 2.2], [-20, -8, 1.6], [-26, -14, 2.6], [8, -24, 1.8], [15, -16, 2.1], [-14, -24, 1.4]]) {
+      const y = L.gy(x, z);
+      L.add(G.cyl(0.32, 0.36, h, 8), M(x, y - 0.1, z), 0x5aa83a, 'leaves', 0.6);
+      L.add(G.sphere(0.32, 8, 5), M(x, y + h - 0.1, z), 0x5aa83a, 'leaves', 0.6);
+      for (const s of [-1, 1]) {
+        L.add(G.cyl(0.16, 0.18, 0.7, 6), M(x + s * 0.45, y + h * 0.45, z, 0, 1, 0, s * 0.2), 0x5aa83a, 'leaves', 0.6);
+        L.add(G.cyl(0.18, 0.18, 0.4, 6), M(x + s * 0.28, y + h * 0.42, z, 0, 1, 0, s * 1.4), 0x5aa83a, 'leaves', 0.6);
+      }
+      L.world.addCyl({ x, z, y: y - 0.5, r: 0.45, h: h + 0.5, camBlock: false, hazard: 1 });
+    }
     L.apple(-4, 20);
     L.apple(30, -24);
     L.apple(-20, -30);
@@ -290,10 +301,10 @@ export default {
         const p = g.player;
         await g.camTo([10, 12, 30], [LIGHT.x, 16, LIGHT.z], 0);
         await g.camTo([4, 8, 20], [LIGHT.x, 20, LIGHT.z], 3);
-        g.audio.play('sneeze');
+        g.audio.play('croak');
         await g.say([
-          { who: 'nebelbart', text: 'Hatschi! Salzwasser, Sand und Sonnenbrand – hoffentlich spülen euch die Wellen davon, ihr Fellknäuel!' },
-          { who: 'kiki', text: 'Ich bin ein Vogel, du Nebelnase. Ich kann gar nicht ertrinken! ... Oder, Bruno?' },
+          { who: 'koenig', text: 'QUAAAK! Salzwasser, Sand und Sonnenbrand – hoffentlich spülen euch die Wellen davon! Und meine Kaktus-Banditen piksen euch den Rest!' },
+          { who: 'kiki', text: 'Ich bin ein Vogel, du Warzenkönig. Ich kann gar nicht ertrinken! ... Oder, Bruno?' },
           { who: 'bruno', text: 'Sicherheitshalber lernen wir am Lernstein beim Wrack erst mal Tauchen.' },
         ]);
         void p;
@@ -302,23 +313,23 @@ export default {
   },
 };
 
-async function pedroTalk(L, g, xLeft) {
+async function captainTalk(L, g) {
   if (g.save.hasShard('beach:schatz')) {
-    await g.say([{ who: 'pedro', text: 'Arr! Mit euch zwei segle ich jederzeit über die sieben Pfützen!' }]);
+    await g.say([{ who: 'kapitaen', text: 'Mit euch zwei segle ich jederzeit über die sieben Pfützen! Ahoi!' }]);
     return;
   }
-  if (!L.flag('pedro')) {
-    L.setFlag('pedro');
+  if (!L.flag('kapitaen')) {
+    L.setFlag('kapitaen');
     await g.say([
-      { who: 'pedro', text: 'Arrr! Ahoi, Landratten! Ich bin Käpt\'n Pedro, der gefürchtetste Pelikan der sieben Pfützen!' },
-      { who: 'kiki', text: 'Noch nie von dir gehört.' },
-      { who: 'pedro', text: 'Äh ... egal! Seht her: eine echte Schatzkarte! Drei rote X sind hier auf der Insel eingezeichnet.' },
-      { who: 'pedro', text: 'Leider bin ich zu leicht, um den Schatz auszugraben. Stampft kräftig auf alle drei X, und wir teilen die Beute!' },
+      { who: 'kapitaen', text: 'Ahoi, Landratten! Ich bin Käpt\'n Barnabas, der bärtigste Kapitän der sieben Pfützen!' },
+      { who: 'kiki', text: 'Den Bart sieht man schon von Weitem.' },
+      { who: 'kapitaen', text: 'Hohoho! Seht her: eine echte Schatzkarte! Drei rote X sind hier auf der Insel eingezeichnet.' },
+      { who: 'kapitaen', text: 'Leider ist mein alter Rücken zu steif zum Graben. Stampft kräftig auf alle drei X, und wir teilen die Beute!' },
     ]);
     return;
   }
-  await g.say([{ who: 'pedro', text: `Stampft auf die roten X im Sand! Mit dem Stampfer: springen und dann Z. Wenn ich richtig zähle, fehlen noch ... ${Math.max(0, L.game.level.entities.filter((e) => e.kind === 'x' && !e.done).length)}.` }]);
-  void xLeft;
+  const left = L.entities.filter((e) => e.kind === 'x' && !e.done).length;
+  await g.say([{ who: 'kapitaen', text: `Stampft auf die roten X im Sand! Mit dem Stampfer: springen und dann Z. Laut meinem Fernrohr fehlen noch ${left}.` }]);
 }
 
 // ---------- Boss: Käpt'n Knack ----------
@@ -349,7 +360,7 @@ class Knack extends Entity {
       g.audio.playMusic('boss');
       await g.say([
         { who: 'knack', text: 'Wer wagt es, meinen Strand zu betreten?! Ich bin Käpt\'n Knack, Schrecken der Gezeiten!' },
-        { who: 'knack', text: 'Dieses goldene Glitzerding hat mir der Nebel-Opa geschenkt. Wollt ihr es haben? Dann holt es euch aus meinen Scheren!' },
+        { who: 'knack', text: 'Dieses goldene Glitzerding hat mir König Krötus zum Bewachen gegeben. Wollt ihr es haben? Dann holt es euch aus meinen Scheren!' },
         { who: 'kiki', text: 'Bruno, pass auf! Wenn er losstürmt und in den Felsen kracht, bleibt er stecken. Dann gibt\'s eins auf die Schale!' },
       ]);
     });
@@ -492,7 +503,7 @@ class Knack extends Entity {
     const g = this.game;
     g.audio.playMusic('beach');
     await g.cutscene(async () => {
-      await g.say([{ who: 'knack', text: 'Schon gut, schon gut! Ich ergebe mich! Nehmt das Glitzerding ... und erzählt bloß keinem, dass mich ein Bär mit einem Vogel im Rucksack besiegt hat!' }]);
+      await g.say([{ who: 'knack', text: 'Schon gut, schon gut! Ich ergebe mich! Nehmt das Glitzerding ... und erzählt bloß keinem, dass mich ein Dachs mit einem Vogel im Rucksack besiegt hat!' }]);
       await g.camTo([ARENA.x + 6, this.level.gy(ARENA.x, ARENA.z) + 4, ARENA.z + 7], this.shard.pos, 0.8);
       this.shard.reveal();
       await g.wait(1);

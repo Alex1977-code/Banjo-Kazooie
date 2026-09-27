@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { G, M, mat, part } from '../engine/geo.js';
 import { defaultColorRule } from '../game/terrain.js';
-import { makeHedgehog } from '../game/models.js';
+import { makeHedgehog, makeCloud, makePilz } from '../game/models.js';
 import { rng, fbm } from '../engine/util.js';
 
 const OAK = { x: 0, z: -14, r: 5.2 };
@@ -78,7 +78,10 @@ export default {
       L.cyl({ x, z, y: SWAMP.y - 0.4, r: 1.6, h: 0.55, seg: 10, color: 0x4aa83a, tex: 'leaves' });
       L.add(G.sphere(0.3, 6, 4), M(x + 0.6, SWAMP.y + 0.3, z - 0.4), 0xff8ad0, 'plain');
     }
-    L.platform({ w: 3.4, h: 0.6, d: 1.6, color: 0x8a6440, tex: 'bark', path: (t) => ({ x: -37.5, y: SWAMP.y + 0.25, z: 10 + Math.sin(t * 0.9) * 4 }) });
+    // Wölkchen trägt Bruno über den Sumpf
+    const cloud = makeCloud();
+    L.platform({ shape: 'cyl', r: 1.35, h: 0.6, mesh: cloud, path: (t) => ({ x: -37.5, y: SWAMP.y + 0.9 + Math.sin(t * 2.2) * 0.12, z: 10 + Math.sin(t * 0.9) * 4, rot: Math.PI / 2 }) });
+    L.animated.push((dt, t) => { cloud.userData.rig.star.rotation.y = t * 2; });
     L.berryLine(-25, 12, -37.5, 10, 5, 1, SWAMP.y + 1.2);
     // Baumstumpf mit Splitter auf der Sumpfinsel
     const stumpShard = L.shard('stumpf', ISLAND.x, L.gy(ISLAND.x, ISLAND.z) + 1.4, ISLAND.z, { hidden: true });
@@ -168,14 +171,14 @@ export default {
         wander: 8, color: 0x7a3f9f,
         onDefeat: () => {
           beetlesLeft--;
-          if (kaeferShard && beetlesLeft > 0) L.game.toast(`Nebelkäfer: noch ${beetlesLeft}`);
+          if (kaeferShard && beetlesLeft > 0) L.game.toast(`Blechkäfer: noch ${beetlesLeft}`);
           if (beetlesLeft === 0 && kaeferShard) {
             L.game.cutscene(async () => {
               const g = L.game;
               await g.camTo([CLEARING.x + 8, L.gy(CLEARING.x, CLEARING.z) + 6, CLEARING.z + 10], kaeferShard.pos, 1);
               kaeferShard.reveal();
               await g.wait(1);
-              await g.say([{ who: 'kiki', text: 'Alle Nebelkäfer erledigt! Und seht mal, was sie bewacht haben!' }]);
+              await g.say([{ who: 'kiki', text: 'Alle Blechkäfer verschrottet! Und seht mal, was sie für Krötus bewacht haben!' }]);
             });
           }
         },
@@ -238,6 +241,9 @@ export default {
     L.portal(0, 68, { rot: Math.PI, to: 'hub', spawn: 'from-pilz', label: 'Wurzelhügel', color: 0xffd24a });
     L.spawnPoint('start', 0, 57, Math.PI);
 
+    // ---------- Pauli Pilz gibt Tipps ----------
+    L.npc(makePilz(), 5, 50, { who: 'pilz', facing: -2.4, talk: (g) => pauliTalk(L, g) });
+
     // ---------- Deko ----------
     const r = rng(77);
     for (let i = 0; i < 90; i++) {
@@ -271,11 +277,11 @@ export default {
         const p = g.player;
         await g.camTo([p.pos.x + 6, p.pos.y + 8, p.pos.z - 10], [OAK.x, 18, OAK.z], 0);
         await g.camTo([p.pos.x + 3, p.pos.y + 5, p.pos.z - 14], [OAK.x, 22, OAK.z], 3);
-        g.audio.play('sneeze');
+        g.audio.play('croak');
         await g.say([
-          { who: 'nebelbart', text: 'Hatschi! Ihr wollt meine Splitter zurück? Im Pilzwald verirrt ihr euch bestimmt, ihr pelzigen Trottel!' },
-          { who: 'kiki', text: 'Pff! Wir verirren uns nie! ... Bruno, wo ist eigentlich Norden?' },
-          { who: 'bruno', text: 'Äh ... da, wo der riesige Baum steht? Lass uns einfach alle Splitter einsammeln.' },
+          { who: 'koenig', text: 'QUAAAK! Ihr wollt meine Splitter? Im Pilzwald suchen meine Blechkäfer schon alles ab – ihr kommt zu spät, ihr Fellknäuel!' },
+          { who: 'kiki', text: 'Seine Käfer sind aus Blech? Na, dann scheppert es hier gleich gewaltig!' },
+          { who: 'bruno', text: 'Lass uns einfach alle Splitter vor ihnen finden. Der Pilz da vorne weiß bestimmt, wo wir suchen müssen.' },
         ]);
       });
     }
@@ -289,7 +295,7 @@ async function oakTalk(L, g) {
     return;
   }
   await g.say([
-    { who: 'eiche', text: 'Hohoho ... wer klopft denn da an meine Rinde? Ein Bär mit einem Rennkuckuck im Rucksack, wie ungewöhnlich.' },
+    { who: 'eiche', text: 'Hohoho ... wer klopft denn da an meine Rinde? Ein Dachs mit einem Rennkuckuck im Rucksack, wie ungewöhnlich.' },
     { who: 'eiche', text: 'Seit heute Morgen kitzelt es fürchterlich in meiner Krone. Irgendetwas Goldenes ist dort oben gelandet.' },
     { who: 'eiche', text: 'Klettert doch über die Baumpilze an meinem Stamm nach oben und nehmt es mit. Aber tretet mir nicht auf die Äste!' },
   ]);
@@ -345,4 +351,26 @@ async function reunion(L, s, shard) {
     shard.reveal();
     await g.wait(1);
   });
+}
+
+// Pauli Pilz verrät, wo der nächste fehlende Splitter steckt
+async function pauliTalk(L, g) {
+  const has = (id) => g.save.hasShard(`pilz:${id}`);
+  if (!L.flag('pauli')) {
+    L.setFlag('pauli');
+    await g.say([
+      { who: 'pilz', text: 'Oh, Besuch! Ich bin Pauli Pilz. Willkommen im Pilzwald – hier bin ich aufgewachsen, sozusagen aus dem Boden geschossen!' },
+      { who: 'pilz', text: 'Seit die Blechkäfer vom Krötenkönig hier herumklappern, traut sich keiner mehr raus. Sechs Sonnensplitter sollen im Wald liegen.' },
+    ]);
+  }
+  const hints = [
+    ['eiche', 'Opa Eiche in der Mitte des Waldes jammert, dass es in seiner Krone kitzelt. Klettert über die Baumpilze an seinem Stamm nach oben!'],
+    ['insel', 'Im Osten stehen Hüpfpilze. Springt drauf und lenkt in der Luft – ganz oben schwebt eine Insel mit einem Splitter.'],
+    ['stupsi', 'Frau Stachelig im Süden sucht ihren kleinen Stupsi. Der wollte zu den leuchtenden Pilzen im Nordwesten.'],
+    ['kaefer', 'Auf der Käferlichtung im Nordosten bewachen fünf Blechkäfer etwas Goldenes. Verschrottet sie alle!'],
+    ['stumpf', 'Mitten im Giftsumpf im Westen steht ein rissiger Baumstumpf. Nehmt die Seerosen und mein Wolkenfreund Wölkchen trägt euch rüber. Dann: Stampfer!'],
+    ['gluehwuermchen', 'Fünf Glühwürmchen haben sich im Wald versteckt. Wenn ihr alle findet, zeigen sie euch einen Splitter.'],
+  ];
+  const next = hints.find(([id]) => !has(id));
+  await g.say([{ who: 'pilz', text: next ? next[1] : 'Ihr habt alle Splitter aus dem Pilzwald gefunden! Ihr seid ja schneller als ein Pilz wächst!' }]);
 }

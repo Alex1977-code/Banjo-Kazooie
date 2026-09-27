@@ -208,7 +208,8 @@ export class Game {
   }
 
   maxHealth() {
-    return 5 + Object.keys(this.save.data.flags).filter((k) => k.endsWith(':allBerries')).length;
+    const allBerries = Object.keys(this.save.data.flags).filter((k) => k.endsWith(':allBerries')).length;
+    return 5 + allBerries + (this.save.data.hearts || 0);
   }
 
   refreshCounters() {

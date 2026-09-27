@@ -1,6 +1,6 @@
 // Service Worker: macht das Spiel offline spielbar und installierbar.
 // Bei Änderungen am Spiel VERSION erhöhen, damit Handys die neue Version laden.
-const VERSION = 'bruno-kiki-v2';
+const VERSION = 'bruno-kiki-v3';
 
 const CORE = [
   './',

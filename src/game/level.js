@@ -6,7 +6,7 @@ import { Batch, G, M, mat, mergeGeos } from '../engine/geo.js';
 import { rng, fbm, lerp } from '../engine/util.js';
 import { Terrain, defaultColorRule } from './terrain.js';
 import {
-  Shard, Firefly, Apple, BerryField, NPC, Lernstein, Beetle, Grimmpilz, Crab, FogImp, Portal,
+  Shard, Firefly, Apple, BerryField, NPC, Lernstein, Beetle, Grimmpilz, Crab, Cactus, Portal,
   Trigger, Platform, Breakable, PoundSpot, Bouncer, Follower, signTexture,
 } from './entities.js';
 
@@ -378,7 +378,7 @@ export class Level {
   beetle(x, z, o) { return this.spawn(new Beetle(this, x, z, o)); }
   grimmpilz(x, z, o) { return this.spawn(new Grimmpilz(this, x, z, o)); }
   crab(x, z, o) { return this.spawn(new Crab(this, x, z, o)); }
-  fogImp(x, y, z, o) { return this.spawn(new FogImp(this, x, y, z, o)); }
+  cactus(x, z, o) { return this.spawn(new Cactus(this, x, z, o)); }
   portal(x, z, o) { return this.spawn(new Portal(this, x, z, o)); }
   trigger(x, z, o) { return this.spawn(new Trigger(this, x, o.y ?? this.groundTop(x, z), z, o)); }
   platform(o) { return this.spawn(new Platform(this, o)); }

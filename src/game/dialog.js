@@ -4,14 +4,16 @@ import { B } from '../engine/input.js';
 export const NAMES = {
   bruno: 'Bruno',
   kiki: 'Kiki',
-  tilda: 'Oma Tilda',
-  nebelbart: 'Nebelbart',
+  tilo: 'Opa Tilo',
+  koenig: 'König Krötus',
   igel: 'Frau Stachelig',
   stupsi: 'Stupsi',
   eiche: 'Opa Eiche',
-  pedro: 'Käpt\'n Pedro',
+  kapitaen: 'Käpt\'n Barnabas',
   knack: 'Käpt\'n Knack',
   stein: 'Lernstein',
+  pilz: 'Pauli Pilz',
+  lotti: 'Lotti Langsam',
 };
 
 export class Dialog {
@@ -48,6 +50,50 @@ export class Dialog {
     });
   }
 
+  // Frage mit Antwortmöglichkeiten – liefert den gewählten Index (letzte Option = Abbrechen)
+  choose(who, text, options) {
+    if (this.game.skipping) return Promise.resolve(options.length - 1);
+    return new Promise((res) => {
+      this.say([{ who, text }]).then(() => {});
+      this.choice = { options, idx: 0, res };
+      this.renderChoice();
+    });
+  }
+
+  renderChoice() {
+    let box = this.el.querySelector('.dlg-choices');
+    if (!box) {
+      box = document.createElement('div');
+      box.className = 'dlg-choices';
+      this.el.querySelector('.dlg-body').append(box);
+    }
+    box.innerHTML = '';
+    this.choice.options.forEach((o, i) => {
+      const b = document.createElement('button');
+      b.className = 'dlg-choice' + (i === this.choice.idx ? ' sel' : '');
+      b.textContent = o;
+      b.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        this.choice.idx = i;
+        this.pick();
+      });
+      box.append(b);
+    });
+    this.el.classList.add('choosing');
+  }
+
+  pick() {
+    const c = this.choice;
+    if (!c || this.shown < this.full.length) return;
+    this.choice = null;
+    this.el.classList.remove('choosing');
+    this.el.querySelector('.dlg-choices')?.remove();
+    this.game.audio.play('ok');
+    this.idx = this.lines.length;
+    this.close();
+    c.res(c.idx);
+  }
+
   show() {
     const l = this.lines[this.idx];
     this.who = l.who || 'default';
@@ -63,6 +109,7 @@ export class Dialog {
 
   advance() {
     if (!this.active || this.inputCool > 0) return;
+    if (this.choice && this.shown >= this.full.length) return;
     if (this.shown < this.full.length) {
       this.shown = this.full.length;
       this.textEl.textContent = this.full;
@@ -87,6 +134,13 @@ export class Dialog {
 
   // Sofort alles schließen (z.B. beim Überspringen)
   flush() {
+    if (this.choice) {
+      const c = this.choice;
+      this.choice = null;
+      this.el.classList.remove('choosing');
+      this.el.querySelector('.dlg-choices')?.remove();
+      c.res(c.options.length - 1);
+    }
     while (this.active) {
       this.idx = this.lines.length;
       this.close();
@@ -112,6 +166,15 @@ export class Dialog {
         }
       }
       if (this.shown >= this.full.length) this.el.classList.add('done');
+    }
+    if (this.choice && this.shown >= this.full.length) {
+      const c = this.choice, n = c.options.length;
+      if (input.pressed(B.UP) || input.pressed(B.LEFT)) { c.idx = (c.idx + n - 1) % n; this.renderChoice(); this.game.audio.play('menu'); }
+      if (input.pressed(B.DOWN) || input.pressed(B.RIGHT)) { c.idx = (c.idx + 1) % n; this.renderChoice(); this.game.audio.play('menu'); }
+      // auf dem Handy nur per direktem Tipp auf eine Antwort (kein versehentlicher Kauf)
+      if (input.pressed(B.JUMP) && this.inputCool <= 0 && this.game.input.device !== 'touch') this.pick();
+      else if (input.pressed(B.ATTACK) && this.inputCool <= 0) { c.idx = n - 1; this.pick(); }
+      return;
     }
     if (input.pressed(B.JUMP) || input.pressed(B.ATTACK)) this.advance();
   }

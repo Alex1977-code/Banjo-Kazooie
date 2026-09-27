@@ -1,6 +1,6 @@
 # Bruno & Kiki – Das Geheimnis des Sonnensteins
 
-Ein 3D-Jump'n'Run im Stil der großen N64-Plattformer: ein Braunbär und ein frecher Rennkuckuck im Rucksack,
+Ein 3D-Jump'n'Run im Stil der großen N64-Plattformer: ein Dachs und ein frecher Rennkuckuck im Rucksack,
 eine Welt voller Sammelkram, brabbelnde Figuren, ein niesender Zauberer – und das alles
 direkt im Browser. Läuft auf dem **Handy mit Touch-Steuerung** und auf dem **Fernseher mit Controller**.
 
@@ -12,17 +12,18 @@ direkt im Browser. Läuft auf dem **Handy mit Touch-Steuerung** und auf dem **Fe
 
 ## Die Geschichte
 
-Der griesgrämige Zauberer **Nebelbart** hasst Sonnenschein. Eines Morgens zerschmettert er den
-**Sonnenstein** auf dem Sonnenhügel und verstreut die Splitter in alle Winde – das Wurzeltal
-wird grau und trüb. **Bruno** der Braunbär und seine beste Freundin **Kiki**, ein Rennkuckuck, der in Brunos Rucksack wohnt, ziehen los,
-um die **Sonnensplitter** zurückzuholen und Nebelbart in seinem Turm das Handwerk zu legen.
+Der gierige **König Krötus** will den goldenen **Sonnenstein** für seine Schatzkammer. Als er
+ihn vom Sonnenhügel reißt, zerspringt der Stein in tausend Stücke – die Splitter fliegen in alle
+Winde und das Wurzeltal wird grau und trüb. **Bruno** der Dachs und seine beste Freundin **Kiki**,
+ein Rennkuckuck, der in Brunos Rucksack wohnt, ziehen los, um die **Sonnensplitter** vor Krötus'
+Blechkäfern zu finden und dem Krötenkönig in seinem Turm das Handwerk zu legen.
 
 | Welt | Was dich erwartet |
 |---|---|
-| **Wurzelhügel** (Hub) | Brunos Höhle, Oma Tilda erklärt alles, Lernsteine für Hochsprung & Stampfer, Felsturm und rissige Steinplatte. Tore zu allen Welten. |
-| **Pilzwald** (1 Splitter) | Opa Eiche mit Wendel-Baumpilzen bis zur Krone, Hüpfpilze zur schwebenden Insel, Giftsumpf mit Seerosen, Käferlichtung, verlorenes Igelkind Stupsi. |
-| **Muschelbucht** (4 Splitter) | Leuchtturm mit Wendeltreppe, Tauchgang zum Schiffswrack, Schatzsuche mit Piraten-Pelikan Pedro, Boss Käpt'n Knack, schwimmende Fässer. |
-| **Nebelturm** (10 Splitter) | Aufstieg über die Außentreppe und Endkampf gegen Nebelbart in drei Phasen. |
+| **Wurzelhügel** (Hub) | Brunos Dachsbau, Opa Tilo erklärt alles, Lotti Langsam tauscht Beeren gegen Extra-Herzen, Lernsteine für Hochsprung & Stampfer, Felsturm und rissige Steinplatte. Tore zu allen Welten. |
+| **Pilzwald** (1 Splitter) | Pauli Pilz gibt Tipps, Opa Eiche mit Wendel-Baumpilzen bis zur Krone, Hüpfpilze zur schwebenden Insel, Giftsumpf mit Seerosen und Wölkchen, Käferlichtung voller Blechkäfer, verlorenes Igelkind Stupsi. |
+| **Muschelbucht** (4 Splitter) | Leuchtturm mit Wendeltreppe, Tauchgang zum Schiffswrack, Schatzsuche mit Käpt'n Barnabas, Kaktus-Banditen, Boss Käpt'n Knack, schwimmende Fässer. |
+| **Krötenturm** (10 Splitter) | Aufstieg über die Außentreppe, Wölkchen-Flug zur Bonusinsel und Endkampf gegen König Krötus in drei Phasen (Goldmünzen, Bauchplatscher, Blechkäfer). |
 
 Insgesamt gibt es **14 Sonnensplitter**, über **180 Beeren**, **10 Glühwürmchen** (alle fünf einer
 Welt ergeben einen Splitter) und Extra-Herzen für alle Beeren einer Welt.
@@ -79,7 +80,7 @@ index.html            Spiel
 controller.html       Handy-Controller für den TV-Modus
 src/engine/           Renderer, Eingabe (Touch/Gamepad/Tastatur/Remote), Kamera, Kollision, Audio, Partikel
 src/game/             Spielfigur, Modelle, Gegner & Objekte, Dialoge, Menüs, HUD, Speichern
-src/levels/           Wurzelhügel, Pilzwald, Muschelbucht, Nebelturm
+src/levels/           Wurzelhügel, Pilzwald, Muschelbucht, Krötenturm (Datei nebelturm.js)
 vendor/               three.js, PeerJS, QR-Code-Generator (siehe vendor/LICENSES.md)
 tools/                Icon-Generator
 ```

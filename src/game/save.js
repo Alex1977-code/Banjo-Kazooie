@@ -19,6 +19,8 @@ function fresh() {
     fireflies: {},
     berries: {},
     flags: {},
+    hearts: 0, // bei Lotti gekaufte Extra-Herzen
+    spent: 0, // dafür ausgegebene Beeren
     settings: { ...DEFAULT_SETTINGS },
     playTime: 0,
   };
@@ -71,4 +73,5 @@ export class Save {
   levelShards(id) { return Object.keys(this.data.shards).filter((k) => k.startsWith(id + ':')).length; }
   levelFireflies(id) { return Object.keys(this.data.fireflies).filter((k) => k.startsWith(id + ':')).length; }
   totalBerries() { return Object.values(this.data.berries).reduce((a, b) => a + b.length, 0); }
+  wallet() { return this.totalBerries() - (this.data.spent || 0); }
 }

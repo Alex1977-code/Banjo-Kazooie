@@ -1,15 +1,17 @@
 // Rendert kleine Portraits der Figuren (für die Textboxen) direkt aus den 3D-Modellen.
 import * as THREE from 'three';
-import { makeBruno, makeKiki, makeTilda, makeNebelbart, makeHedgehog, makePelican, makeCrab, makeLernstein } from './models.js';
+import { makeBruno, makeKiki, makeTilo, makeToadKing, makeHedgehog, makeCaptain, makeCrab, makeLernstein, makePilz, makeSnail } from './models.js';
 
 const CONF = {
   bruno: { make: makeBruno, y: 1.75, dist: 2.2, bg: 0x6aa7e8 },
   kiki: { make: makeKiki, y: 0.3, dist: 1.05, bg: 0xffd28a },
-  tilda: { make: makeTilda, y: 1.9, dist: 2.2, bg: 0xa8e08a },
-  nebelbart: { make: makeNebelbart, y: 1.85, dist: 2.8, bg: 0x6a4f9a },
+  tilo: { make: makeTilo, y: 1.95, dist: 2.3, bg: 0xa8e08a },
+  koenig: { make: makeToadKing, y: 2.05, dist: 3.1, bg: 0x6a4f9a },
+  pilz: { make: makePilz, y: 1.45, dist: 2.3, bg: 0xb8f0e8 },
+  lotti: { make: makeSnail, y: 1.25, dist: 2.1, bg: 0xf0c8ff },
   igel: { make: () => makeHedgehog(1, true), y: 0.75, dist: 2.1, bg: 0xf0c890 },
   stupsi: { make: () => makeHedgehog(0.6), y: 0.45, dist: 1.4, bg: 0xfff0a0 },
-  pedro: { make: makePelican, y: 1.65, dist: 2.3, bg: 0x7fd4ff },
+  kapitaen: { make: makeCaptain, y: 1.95, dist: 2.4, bg: 0x7fd4ff },
   knack: { make: () => makeCrab(true), y: 0.75, dist: 2.6, bg: 0xffd08a },
   stein: { make: makeLernstein, y: 1.1, dist: 3, bg: 0x2a4a6a },
   eiche: { make: null, bg: 0x6b8a3a },

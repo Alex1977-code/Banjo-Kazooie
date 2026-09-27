@@ -1,8 +1,8 @@
-// Nebelturm: Aufstieg über die Außentreppe und Endkampf gegen Nebelbart.
+// Krötenturm: Aufstieg über die Außentreppe und Endkampf gegen König Krötus.
 import * as THREE from 'three';
 import { G, M, mat, part } from '../engine/geo.js';
-import { makeNebelbart } from '../game/models.js';
-import { Entity, BlobShadow, FogImp } from '../game/entities.js';
+import { makeToadKing, makeCoin, makeCloud } from '../game/models.js';
+import { Entity, BlobShadow, Beetle } from '../game/entities.js';
 import { damp, dampAngle } from '../engine/util.js';
 
 const R = 17;
@@ -15,7 +15,7 @@ const DA = 0.098;
 
 export default {
   id: 'turm',
-  name: 'Nebelturm',
+  name: 'Krötenturm',
   subtitle: 'Finale',
   music: 'boss',
   killY: BASE - 22,
@@ -61,6 +61,14 @@ export default {
       if (Math.abs(diff) < 0.22) continue;
       L.box({ x: Math.cos(a) * (R - 0.4), z: Math.sin(a) * (R - 0.4), y: 0, w: 1.1, h: 1.4, d: 2.4, rot: -a, color: 0x7a7488, tex: 'brick', uv: 0.4, camBlock: false });
     }
+    // Goldener Thron und Münzhaufen – Krötus liebt Gold
+    L.box({ x: 0, z: -13.5, y: 0, w: 3.2, h: 1.2, d: 2, color: 0xd9ab34, tex: 'plain' });
+    L.box({ x: 0, z: -14.3, y: 1.2, w: 3.2, h: 3.4, d: 0.5, color: 0xd9ab34, tex: 'plain' });
+    L.add(G.box(2.6, 0.3, 1.6), M(0, 1.2, -13.4), 0x8a2a4a, 'plain');
+    for (const s of [-1, 1]) L.add(G.sphere(0.35, 8, 6), M(s * 1.6, 4.6, -14.3), 0xe0203a, 'plain');
+    for (const [x, z, n] of [[5, -12, 6], [-5, -12, 5], [9, -9, 4], [-9, -9, 5]]) {
+      for (let i = 0; i < n; i++) L.add(G.cyl(0.35, 0.35, 0.08, 10), M(x + Math.sin(i * 2.4) * 0.5, i * 0.08, z + Math.cos(i * 1.7) * 0.5), 0xf0c030, 'plain');
+    }
     // Rune-Säulen
     for (let i = 0; i < 4; i++) {
       const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
@@ -85,6 +93,22 @@ export default {
     // Äpfel in der Arena (wachsen nach)
     for (const [x, z] of [[8, 8], [-8, 8], [8, -8], [-8, -8]]) L.apple(x, z, 0, { respawn: 25 });
     L.berryRing(0, 0, 6, 8, 0.9);
+
+    // Wölkchen fliegt vom Landeplatz zu einer kleinen Bonus-Insel über dem Nebel
+    const cloud = makeCloud();
+    L.platform({
+      shape: 'cyl', r: 1.35, h: 0.6, mesh: cloud,
+      path: (t) => {
+        const k = (1 - Math.cos(t * 0.55)) / 2;
+        return { x: 7 + k * 12, y: BASE + 0.1 + k * 2.2 + Math.sin(t * 2.2) * 0.1, z: 28 + k * 5, rot: -Math.PI / 2 + 0.4 };
+      },
+    });
+    L.animated.push((dt, t) => { cloud.userData.rig.star.rotation.y = t * 2; });
+    L.add(G.rock(3.2, 9), M(22.5, BASE - 1, 34, 0, [1, 0.7, 1]), 0x6a6478, 'rock', 0.4, { flat: true });
+    L.add(G.cyl(3, 2.8, 0.5, 10), M(22.5, BASE + 1.9, 34), 0x5a8a4a, 'ground', 0.4);
+    L.world.addCyl({ x: 22.5, z: 34, y: BASE - 2, r: 2.9, h: 4.4 });
+    L.berryRing(22.5, 34, 1.8, 6, BASE + 3.3);
+    L.apple(22.5, 34, BASE + 2.4);
 
     // Blitze
     let flashT = 3;
@@ -112,7 +136,7 @@ export default {
         await g.camTo([30, BASE + 8, 40], [0, -4, 0], 0);
         await g.camTo([26, 6, 26], [0, 4, 0], 3.5);
         await g.say([
-          { who: 'kiki', text: 'Brrr ... der Nebelturm. Hier oben wohnt also der alte Nebelsack.' },
+          { who: 'kiki', text: 'Brrr ... der Krötenturm. Hier oben thront also der alte Warzenkönig.' },
           { who: 'bruno', text: 'Die Treppe führt außen herum nach oben. Schön vorsichtig, da unten ist nur Nebel!' },
         ]);
       });
@@ -124,45 +148,38 @@ export default {
   },
 };
 
-// ---------- Nebelkugel ----------
-class Orb extends Entity {
-  constructor(L, x, y, z, vx, vy, vz, homing = 0) {
+// ---------- Goldmünze (Wurfgeschoss) ----------
+const GRAV = 16;
+class Coin extends Entity {
+  constructor(L, x, y, z, tx, tz, flight) {
     super(L, x, y, z);
-    const g = new THREE.Group();
-    part(g, G.sphere(0.45, 10, 8), mat(0x9a7aff, { emissive: 0x5a2aff, transparent: true, opacity: 0.85 }));
-    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: L.game.tex.glow, color: 0xb08aff, blending: THREE.AdditiveBlending, depthWrite: false }));
-    glow.scale.setScalar(2.2);
-    g.add(glow);
-    this.setObj(g);
-    this.vel = new THREE.Vector3(vx, vy, vz);
-    this.homing = homing;
-    this.life = 6;
-    this.shadow = new BlobShadow(L, 0.9);
+    this.setObj(makeCoin());
+    // Wurfbahn so berechnen, dass die Münze nach "flight" Sekunden beim Ziel landet
+    this.vel = new THREE.Vector3((tx - x) / flight, (0.5 - y + 0.5 * GRAV * flight * flight) / flight, (tz - z) / flight);
+    this.life = 5;
+    this.shadow = new BlobShadow(L, 0.8);
   }
   update(dt) {
     const p = this.player;
     this.life -= dt;
-    if (this.homing) {
-      const to = new THREE.Vector3(p.pos.x - this.pos.x, p.pos.y + 0.9 - this.pos.y, p.pos.z - this.pos.z).normalize();
-      const sp = this.vel.length();
-      this.vel.lerp(to.multiplyScalar(sp), Math.min(1, dt * this.homing));
-    }
+    this.vel.y -= GRAV * dt;
     this.pos.addScaledVector(this.vel, dt);
     this.obj.position.copy(this.pos);
-    this.obj.rotation.y += dt * 5;
+    this.obj.rotation.y += dt * 14;
     this.shadow.update(this.pos.x, this.pos.y, this.pos.z);
-    if (Math.random() < dt * 20) this.game.particles.emit('fog', this.pos.x, this.pos.y, this.pos.z, 1);
+    if (Math.random() < dt * 12) this.game.particles.emit('sparkle', this.pos.x, this.pos.y, this.pos.z, 1, [1, 0.85, 0.3]);
     const dx = p.pos.x - this.pos.x, dy = p.pos.y + 0.9 - this.pos.y, dz = p.pos.z - this.pos.z;
     if (p.attack.active && p.attackHits(this.pos, 0.6, 1)) return this.pop();
-    if (dx * dx + dy * dy + dz * dz < 1.2) {
+    if (dx * dx + dy * dy + dz * dz < 1.3) {
       p.hurt(this.pos);
       return this.pop();
     }
     const gy = this.level.world.ground(this.pos.x, this.pos.z, this.pos.y + 0.5).y;
-    if (this.pos.y < gy + 0.3 || this.life <= 0) this.pop();
+    if (this.pos.y < gy + 0.2 || this.life <= 0) this.pop();
   }
   pop() {
-    this.game.particles.emit('pop', this.pos.x, this.pos.y, this.pos.z, 6, [0.7, 0.55, 1]);
+    this.game.audio.play('coin');
+    this.game.particles.emit('sparkle', this.pos.x, this.pos.y + 0.2, this.pos.z, 8, [1, 0.8, 0.3]);
     this.remove();
   }
 }
@@ -172,7 +189,7 @@ class Shockwave extends Entity {
   constructor(L, x, y, z) {
     super(L, x, y, z);
     this.r = 1;
-    this.mesh = new THREE.Mesh(new THREE.TorusGeometry(1, 0.35, 6, 32), mat(0xc0a0ff, { emissive: 0x6a3aff, transparent: true, opacity: 0.8 }));
+    this.mesh = new THREE.Mesh(new THREE.TorusGeometry(1, 0.35, 6, 32), mat(0xf0d060, { emissive: 0x806000, transparent: true, opacity: 0.8 }));
     this.mesh.rotation.x = Math.PI / 2;
     this.setObj(this.mesh);
     this.obj.position.y = y + 0.3;
@@ -187,15 +204,17 @@ class Shockwave extends Entity {
   }
 }
 
-// ---------- Endgegner Nebelbart ----------
+// ---------- Endgegner König Krötus ----------
+// Ablauf: hüpft am Rand entlang und wirft Münzen -> großer Bauchplatscher ->
+// liegt benommen am Boden (verwundbar) -> nach Treffer ruft er Blechkäfer.
 class Boss extends Entity {
   constructor(L) {
-    super(L, 0, 7, -8);
-    this.model = makeNebelbart();
-    this.model.scale.setScalar(1.6);
+    super(L, 0, 0, -8);
+    this.model = makeToadKing();
+    this.model.scale.setScalar(1.5);
     this.rig = this.model.userData.rig;
     this.setObj(this.model);
-    this.shadow = new BlobShadow(L, 3.5);
+    this.shadow = new BlobShadow(L, 4);
     this.maxHp = 6;
     this.hp = this.maxHp;
     this.state = 'idle';
@@ -204,7 +223,8 @@ class Boss extends Entity {
     this.casts = 0;
     this.active = false;
     this.facing = 0;
-    this.ground = new THREE.Vector3();
+    this.from = new THREE.Vector3();
+    this.to = new THREE.Vector3();
   }
 
   get phase() { return this.hp > 4 ? 1 : this.hp > 2 ? 2 : 3; }
@@ -214,38 +234,62 @@ class Boss extends Entity {
     this.st = 0;
   }
 
+  clearAttacks() {
+    for (const e of this.level.entities) if (e instanceof Coin || e instanceof Shockwave || e instanceof Beetle) e.remove();
+  }
+
   reset() {
     if (this.state === 'dead') return;
     this.active = false;
     this.hp = this.maxHp;
     this.set('idle');
-    this.pos.set(0, 7, -8);
-    for (const e of this.level.entities) if (e instanceof Orb || e instanceof Shockwave || e instanceof FogImp) e.remove();
+    this.pos.set(0, 0, -8);
+    this.model.rotation.set(0, 0, 0);
+    this.clearAttacks();
     this.level.trigger(0, 0, { y: 0, r: 13, h: 5, onEnter: () => this.start() });
-    this.game.hud.setBoss?.(null);
+    this.game.hud.setBoss(null);
   }
 
   async start() {
     if (this.active) return;
     const g = this.game;
     await g.cutscene(async () => {
-      await g.camTo([6, 5, 6], [this.pos.x, this.pos.y + 2, this.pos.z], 1.2);
+      await g.camTo([6, 5, 4], [this.pos.x, this.pos.y + 2.8, this.pos.z], 1.2);
+      g.audio.play('croak');
       if (!this.level.flag('bossIntro')) {
         this.level.setFlag('bossIntro');
         await g.say([
-          { who: 'nebelbart', text: 'Ihr schon wieder?! HATSCHI! Wie seid ihr an meinen Nebelkäfern und dem Krabbenkäpt\'n vorbeigekommen?' },
-          { who: 'kiki', text: 'Mit Köpfchen, Schnabel und einem sehr dicken Bären!' },
-          { who: 'bruno', text: 'Hey! ... Aber sie hat recht. Gib den Sonnenstein zurück, Nebelbart!' },
-          { who: 'nebelbart', text: 'Niemals! Das Wurzeltal bleibt grau! Ich blase euch mit meinen Nebelkugeln vom Turm! Hatschi!' },
+          { who: 'koenig', text: 'Ihr schon wieder?! QUAAAK! Wie seid ihr an meinen Blechkäfern und dem Krabbenkäpt\'n vorbeigekommen?' },
+          { who: 'kiki', text: 'Mit Köpfchen, Schnabel und einem sehr dicken Dachs!' },
+          { who: 'bruno', text: 'Hey! ... Aber sie hat recht. Gib den Sonnenstein zurück, Krötus!' },
+          { who: 'koenig', text: 'Niemals! Alles, was glänzt, gehört MIR! Ich bewerfe euch mit meinem Gold, bis ihr vom Turm purzelt!' },
         ]);
       } else {
-        await g.say([{ who: 'nebelbart', text: 'Zurück für eine zweite Runde? Diesmal pust ich euch weg! Hatschi!' }]);
+        await g.say([{ who: 'koenig', text: 'Zurück für eine zweite Runde? Diesmal kostet es euch das letzte Hemd! QUAAAK!' }]);
       }
-      await g.say([{ who: 'kiki', text: 'Er niest die ganze Zeit ... wenn er richtig heftig niest, verliert er bestimmt das Gleichgewicht. Dann schnappen wir ihn uns!' }]);
+      await g.say([{ who: 'kiki', text: 'Achtung, Münzen! Wenn er seinen großen Bauchplatscher macht, ist er danach ganz benommen. Dann schnappen wir ihn uns!' }]);
     });
     this.active = true;
-    this.set('fly');
-    g.hud.setBoss?.(this.hp / this.maxHp, 'Nebelbart');
+    this.hopT = 0.4;
+    this.set('hop');
+    g.hud.setBoss(this.hp / this.maxHp, 'König Krötus');
+  }
+
+  // Parabel-Sprung von "from" nach "to"
+  jumpTo(x, z, h, dur) {
+    this.from.copy(this.pos);
+    this.to.set(x, 0, z);
+    this.jumpH = h;
+    this.jumpDur = dur;
+    this.jumpT = 0;
+  }
+
+  updateJump(dt) {
+    this.jumpT = Math.min(this.jumpDur, this.jumpT + dt);
+    const k = this.jumpT / this.jumpDur;
+    this.pos.lerpVectors(this.from, this.to, k);
+    this.pos.y = Math.sin(k * Math.PI) * this.jumpH;
+    return k >= 1;
   }
 
   update(dt) {
@@ -253,69 +297,90 @@ class Boss extends Entity {
     this.st += dt;
     const g = this.game, p = this.player, rig = this.rig;
     const toP = Math.atan2(p.pos.x - this.pos.x, p.pos.z - this.pos.z);
-    rig.cloud.rotation.y = this.t;
-    rig.orb.material.emissiveIntensity = 1 + Math.sin(this.t * 8) * 0.5;
+    // Atmen/Aufblähen
+    rig.body.scale.set(1 + Math.sin(this.t * 3) * 0.03, 1 - Math.sin(this.t * 3) * 0.02, 1 + Math.sin(this.t * 3) * 0.03);
 
     if (this.state === 'idle') {
-      this.pos.y = 7 + Math.sin(this.t * 1.5) * 0.4;
       this.facing = dampAngle(this.facing, toP, 2, dt);
-    } else if (this.state === 'fly') {
+    } else if (this.state === 'hop') {
       const ph = this.phase;
-      this.angle += dt * (0.35 + ph * 0.12);
-      const tx = Math.cos(this.angle) * 11, tz = Math.sin(this.angle) * 11;
-      this.pos.x = damp(this.pos.x, tx, 2, dt);
-      this.pos.z = damp(this.pos.z, tz, 2, dt);
-      this.pos.y = damp(this.pos.y, 6.5 + Math.sin(this.t * 1.7) * 0.8, 3, dt);
-      this.facing = dampAngle(this.facing, toP, 5, dt);
-      const interval = [0, 2.1, 1.7, 1.35][ph];
-      if (this.st > interval) {
-        this.st = 0;
+      this.facing = dampAngle(this.facing, toP, 6, dt);
+      if (this.jumpDur && this.jumpT < this.jumpDur) {
+        if (this.updateJump(dt)) {
+          g.particles.emit('dust', this.pos.x, 0, this.pos.z, 6);
+          g.audio.play('land');
+        }
+      } else {
+        this.hopT -= dt;
+        if (this.hopT <= 0) {
+          this.hopT = [0, 1.3, 1.05, 0.85][ph];
+          this.angle += 0.75;
+          this.jumpTo(Math.cos(this.angle) * 10, Math.sin(this.angle) * 10, 2.6, 0.55);
+        }
+      }
+      this.castT = (this.castT ?? 1.2) - dt;
+      if (this.castT <= 0) {
+        this.castT = [0, 2, 1.6, 1.3][ph];
         this.cast();
         this.casts++;
         if (this.casts >= [0, 4, 5, 6][ph]) {
           this.casts = 0;
-          this.set('sneeze');
-          g.audio.play('sneeze');
-          g.say([{ who: 'nebelbart', text: ['Hatschi!', 'HAAA ... HAAATSCHI!', 'Hah ... hah ... HAAAAATSCHIII!'][ph - 1] }]);
+          this.set('windup');
+          g.audio.play('croak');
+          g.say([{ who: 'koenig', text: ['QUAAAK!', 'QUAAAAAAK!', 'BAUCHPLATSCHER!'][ph - 1] }]);
         }
       }
       rig.armR.rotation.x = damp(rig.armR.rotation.x, 0, 4, dt);
-    } else if (this.state === 'sneeze') {
-      // Holt Luft ... und stürzt dann ab
-      rig.head.rotation.x = this.st < 0.5 ? -this.st * 0.8 : 0.6;
-      if (this.st > 0.6) {
-        this.pos.y -= dt * 18;
-        this.facing += dt * 10;
-        if (this.pos.y <= 0.2) {
-          this.pos.y = 0;
-          this.set('dizzy');
-          g.audio.play('pound');
-          g.renderer.shake = 1;
-          g.particles.emit('ring', this.pos.x, 0, this.pos.z, 20);
-          if (this.phase === 3) this.level.spawn(new Shockwave(this.level, this.pos.x, 0, this.pos.z));
-        }
+    } else if (this.state === 'windup') {
+      // bläst sich auf und duckt sich
+      const k = Math.min(1, this.st / 0.7);
+      this.model.scale.set(1.5 * (1 + k * 0.25), 1.5 * (1 - k * 0.2), 1.5 * (1 + k * 0.25));
+      if (this.st > 0.7) {
+        this.model.scale.setScalar(1.5);
+        // Ziel: in Richtung Spieler, aber innerhalb der Arena
+        let tx = p.pos.x, tz = p.pos.z;
+        const d = Math.hypot(tx, tz);
+        if (d > 9) { tx *= 9 / d; tz *= 9 / d; }
+        this.jumpTo(tx, tz, 11, 1.25);
+        this.set('bigjump');
+      }
+    } else if (this.state === 'bigjump') {
+      this.facing += dt * 8;
+      if (this.updateJump(dt)) {
+        this.set('dizzy');
+        g.audio.play('pound');
+        g.renderer.shake = 1.2;
+        g.input.rumble(300, 1);
+        g.particles.emit('ring', this.pos.x, 0, this.pos.z, 24);
+        if (this.phase >= 2) this.level.spawn(new Shockwave(this.level, this.pos.x, 0, this.pos.z));
       }
     } else if (this.state === 'dizzy') {
-      rig.head.rotation.x = 0;
+      // liegt benommen auf dem Rücken
+      this.model.rotation.x = damp(this.model.rotation.x, -1.2, 8, dt);
       rig.head.rotation.z = Math.sin(this.t * 6) * 0.3;
-      this.facing += dt * 1.5;
-      if (Math.random() < dt * 8) g.particles.emit('sparkle', this.pos.x + Math.sin(this.t * 5) * 1, 4.2, this.pos.z + Math.cos(this.t * 5) * 1, 1, [1, 1, 0.5]);
+      if (Math.random() < dt * 8) g.particles.emit('sparkle', this.pos.x + Math.sin(this.t * 5), 3.2, this.pos.z + Math.cos(this.t * 5), 1, [1, 1, 0.5]);
       if (this.st > [0, 4, 3.4, 3][this.phase]) {
+        this.model.rotation.x = 0;
         rig.head.rotation.z = 0;
-        this.set('fly');
-        g.say([{ who: 'nebelbart', text: 'Ha! Zu langsam, ihr Pelzpuschel!' }]);
+        this.set('hop');
+        g.say([{ who: 'koenig', text: 'Ha! Zu langsam, ihr Pelzpuschel! QUAAAK!' }]);
       }
     } else if (this.state === 'hurt') {
+      this.model.rotation.x = damp(this.model.rotation.x, 0, 10, dt);
       rig.head.rotation.z = 0;
-      this.pos.y = damp(this.pos.y, 7, 3, dt);
-      this.facing += dt * 14;
-      if (this.st > 1.3) {
-        this.set('fly');
-        const imps = this.phase === 2 ? 2 : this.phase === 3 ? 3 : 0;
-        for (let i = 0; i < imps; i++) {
+      this.facing += dt * 12;
+      this.pos.y = Math.sin(Math.min(1, this.st / 1.2) * Math.PI) * 2.5;
+      if (this.st > 1.2) {
+        this.pos.y = 0;
+        this.set('hop');
+        this.hopT = 0.3;
+        const n = this.phase === 2 ? 2 : this.phase === 3 ? 3 : 0;
+        for (let i = 0; i < n; i++) {
           const a = Math.random() * Math.PI * 2;
-          this.level.spawn(new FogImp(this.level, Math.cos(a) * 9, 3, Math.sin(a) * 9, { speed: 3 + this.phase * 0.5 }));
+          const b = this.level.spawn(new Beetle(this.level, Math.cos(a) * 8, Math.sin(a) * 8, { chase: 30, wander: 12, speed: 2.4 + this.phase * 0.4 }));
+          this.game.particles.emit('pop', b.pos.x, 0.5, b.pos.z, 6, [1, 0.6, 0.35]);
         }
+        if (n) g.audio.play('switch');
       }
     } else if (this.state === 'dead') {
       return;
@@ -326,32 +391,31 @@ class Boss extends Entity {
     this.shadow.update(this.pos.x, this.pos.y, this.pos.z);
     if (!this.active) return;
 
-    // Kontakt & Treffer
+    // Treffer & Schaden
     const d = Math.hypot(p.pos.x - this.pos.x, p.pos.z - this.pos.z);
-    const bodyH = 3.5;
-    const close = d < 1.8 && p.pos.y < this.pos.y + bodyH + 0.5 && p.pos.y + p.height > this.pos.y;
+    const bodyH = 3.4;
     if (this.state === 'dizzy') {
-      const stomp = d < 2 && p.vel.y < -1 && p.pos.y > this.pos.y + bodyH - 1;
-      if (p.attackHits(this.pos, 1.4, bodyH) || stomp) this.hit();
-    } else if (close && this.state === 'fly') {
+      const stomp = d < 2.2 && p.vel.y < -1 && p.pos.y > this.pos.y + 1;
+      if (p.attackHits(this.pos, 1.8, 2) || stomp) this.hit();
+    } else if (d < 1.9 && p.pos.y < this.pos.y + bodyH && p.pos.y + p.height > this.pos.y && this.state !== 'hurt') {
       p.hurt(this.pos);
     }
   }
 
   cast() {
     const g = this.game, p = this.player, ph = this.phase;
-    g.audio.play('zap');
-    this.rig.armR.rotation.x = -1.4;
-    const ox = this.pos.x, oy = this.pos.y + 2.5, oz = this.pos.z;
-    const base = Math.atan2(p.pos.x - ox, p.pos.z - oz);
-    const dist = Math.hypot(p.pos.x - ox, p.pos.z - oz);
-    const sp = 8 + ph * 1.5;
-    const tFlight = dist / sp;
-    const vy = (p.pos.y + 0.9 - oy) / Math.max(0.5, tFlight);
-    const spread = ph === 1 ? [0] : [-0.35, 0, 0.35];
+    g.audio.play('coin');
+    this.rig.armR.rotation.x = -1.6;
+    const ox = this.pos.x, oy = this.pos.y + 3.2, oz = this.pos.z;
+    const spread = ph === 1 ? [0] : ph === 2 ? [-0.3, 0, 0.3] : [-0.5, -0.25, 0, 0.25, 0.5];
+    const dx = p.pos.x - ox, dz = p.pos.z - oz;
+    const dist = Math.hypot(dx, dz) || 1;
+    const flight = Math.min(1.4, 0.55 + dist / 16);
     for (const s of spread) {
-      const a = base + s;
-      this.level.spawn(new Orb(this.level, ox, oy, oz, Math.sin(a) * sp, vy, Math.cos(a) * sp, ph === 3 && s === 0 ? 1.2 : 0));
+      const c = Math.cos(s), sn = Math.sin(s);
+      // Ziel um die Spielerposition fächerförmig verteilen
+      const tx = ox + dx * c - dz * sn, tz = oz + dx * sn + dz * c;
+      this.level.spawn(new Coin(this.level, ox, oy, oz, tx, tz, flight));
     }
   }
 
@@ -361,9 +425,10 @@ class Boss extends Entity {
     g.audio.play('bosshit');
     g.renderer.shake = 1;
     g.input.rumble(300, 1);
-    g.particles.emit('pop', this.pos.x, this.pos.y + 2, this.pos.z, 16, [0.8, 0.7, 1]);
+    g.particles.emit('pop', this.pos.x, this.pos.y + 2, this.pos.z, 16, [0.7, 0.8, 0.4]);
+    g.particles.emit('sparkle', this.pos.x, this.pos.y + 2, this.pos.z, 20, [1, 0.85, 0.3]);
     this.player.bounce(10);
-    g.hud.setBoss?.(this.hp / this.maxHp, 'Nebelbart');
+    g.hud.setBoss(this.hp / this.maxHp, 'König Krötus');
     if (this.hp <= 0) {
       this.set('dead');
       this.active = false;
@@ -372,47 +437,48 @@ class Boss extends Entity {
     }
     this.set('hurt');
     const lines = {
-      5: 'Autsch! Mein Bart! Das war nur Glück!',
-      4: 'Jetzt reicht\'s! Nebelgeister, zu mir!',
-      3: 'Aua! Hört auf, das kitzelt ... und tut weh!',
-      2: 'Genug gespielt! Jetzt wird es richtig neblig!',
-      1: 'Nein, nein, NEIN! Ich bin der große Nebelbart!',
+      5: 'Autsch! Meine Krone! Das war nur Glück!',
+      4: 'Jetzt reicht\'s! Blechkäfer, zu mir!',
+      3: 'Aua! Mein schönes Monokel! Das kostet euch was!',
+      2: 'Genug gespielt! Jetzt wird es richtig teuer!',
+      1: 'Nein, nein, NEIN! Ich bin der prächtige König Krötus!',
     }[this.hp];
-    if (lines) g.say([{ who: 'nebelbart', text: lines }]);
+    if (lines) g.say([{ who: 'koenig', text: lines }]);
   }
 
   async victory() {
     const g = this.game, L = this.level;
-    for (const e of L.entities) if (e instanceof Orb || e instanceof Shockwave || e instanceof FogImp) e.remove();
-    g.hud.setBoss?.(null);
+    this.clearAttacks();
+    g.hud.setBoss(null);
     g.audio.stopMusic();
     // beide Flags sofort, damit ein Abbruch in der Szene das Ende nicht verhindert
     g.save.data.flags['turm:won'] = true;
     g.save.data.flags['hub:restored'] = true;
     g.save.write();
     await g.cutscene(async () => {
+      this.model.rotation.set(0, 0, 0);
+      this.pos.y = 0;
+      this.obj.position.copy(this.pos);
       const b = this.pos.clone();
-      await g.camTo([b.x + 6, 4, b.z + 6], [b.x, 2, b.z], 1);
+      await g.camTo([b.x + 6, 4, b.z + 7], [b.x, 2.5, b.z], 1);
       await g.say([
-        { who: 'nebelbart', text: 'Neiiin! Mein wunderschöner, grauer, gemütlicher Nebel ...' },
-        { who: 'nebelbart', text: 'Hah ... hah ... HAAAAAATSCHIIIIII!' },
+        { who: 'koenig', text: 'Neiiin! Mein Gold, meine Krone, mein wunderschöner Sonnenstein ...' },
+        { who: 'koenig', text: 'Das ist noch nicht vorbei, hört ihr? Ich komme wieder! QUAAAAAAK!' },
       ]);
-      g.audio.play('sneeze');
-      // Er niest sich selbst vom Turm
+      g.audio.play('croak');
+      // Mit einem riesigen Sprung ab in den Nebel
       await g.tween(2.2, (k) => {
-        this.pos.set(b.x + k * 40, 2 + k * 30 - k * k * 10, b.z - k * 60);
+        this.pos.set(b.x + k * 40, Math.sin(k * Math.PI * 0.8) * 18 - k * k * 20, b.z - k * 60);
         this.obj.position.copy(this.pos);
-        this.obj.rotation.y = k * 30;
-        this.obj.rotation.z = k * 8;
+        this.obj.rotation.y = k * 20;
       });
       this.remove();
       g.audio.playMusic('victory');
       await g.say([
-        { who: 'kiki', text: 'Und tschüss! Gute Reise, Nebelnase!' },
-        { who: 'bruno', text: 'Seht mal, der Nebel lichtet sich! Schnell, zurück zum Sonnenhügel!' },
+        { who: 'kiki', text: 'Und tschüss, Warzenkönig! Gute Landung im Nebel!' },
+        { who: 'bruno', text: 'Seht mal, die Wolken reißen auf! Schnell, zurück zum Sonnenhügel!' },
       ]);
     });
     g.enterLevel('hub', 'start');
   }
 }
-

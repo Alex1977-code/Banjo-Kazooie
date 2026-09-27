@@ -2,8 +2,8 @@
 import * as THREE from 'three';
 import { G, M, mat, part } from '../engine/geo.js';
 import { defaultColorRule } from '../game/terrain.js';
-import { makeTilda, makeNebelbart, makeShard } from '../game/models.js';
-import { fbm, lerp, rng } from '../engine/util.js';
+import { makeTilo, makeToadKing, makeShard, makeSnail } from '../game/models.js';
+import { fbm, rng } from '../engine/util.js';
 
 const SUN_HILL = { x: 0, z: -46, r: 11, h: 10 };
 const PILLAR = { x: -28, z: -20 };
@@ -78,7 +78,7 @@ export default {
     L.sky({ top: col.top, bottom: col.bottom, mountains: 0x8aa6bf, seed: 11 });
     L.water({ cx: -44, cz: 8, r: 22, y: -0.8, color: 0x4aa8e8 });
 
-    // ---------- Brunos Höhle im Hügel ----------
+    // ---------- Brunos Dachsbau im Hügel ----------
     const fy = L.gy(0, 23);
     L.box({ x: 0, z: 23.4, y: fy - 1, w: 8, h: 5.4, d: 1.6, color: 0xa39a8c, tex: 'stone', uv: 0.35 });
     L.add(G.cyl(1.9, 1.9, 0.35, 16).rotateX(Math.PI / 2), M(0, fy + 1.7, 22.5), 0x8a5a2e, 'wood', 0.6);
@@ -166,16 +166,20 @@ export default {
     // ---------- Lernsteine ----------
     L.lernstein(-29, 24, {
       move: 'highjump', title: 'Hochsprung', facing: 0.8,
-      lines: [{ who: 'tilda', text: 'Hochsprung! Halte Z gedrückt, damit Bruno in die Hocke geht, und drück dann A. So kommst du viel höher hinaus als mit einem normalen Sprung – perfekt für den Felsturm!' }],
+      lines: [{ who: 'tilo', text: 'Hochsprung! Halte Z gedrückt, damit Bruno in die Hocke geht, und drück dann A. So kommst du viel höher hinaus als mit einem normalen Sprung – perfekt für den Felsturm!' }],
     });
     L.lernstein(15, -16, {
       move: 'pound', title: 'Stampfer', facing: -0.6,
-      lines: [{ who: 'tilda', text: 'Stampfer! Drück in der Luft Z, und Bruno saust mit voller Wucht nach unten. Damit zerbrichst du rissige Steinplatten – und Nebelkäfer mögen das auch nicht besonders.' }],
+      lines: [{ who: 'tilo', text: 'Stampfer! Drück in der Luft Z, und Bruno saust mit voller Wucht nach unten. Damit zerbrichst du rissige Steinplatten – und Blechkäfer mögen das auch nicht besonders.' }],
     });
 
-    // ---------- Oma Tilda ----------
-    const tilda = L.npc(makeTilda(), 6, 11, { who: 'tilda', facing: -2.2, talk: (g) => tildaTalk(L, g) });
-    L.tilda = tilda;
+    // ---------- Opa Tilo ----------
+    L.tilo = L.npc(makeTilo(), 6, 11, { who: 'tilo', facing: -2.2, talk: (g) => tiloTalk(L, g) });
+
+    // ---------- Lotti Langsam, die Schnecken-Händlerin ----------
+    const lotti = L.npc(makeSnail(), -12, 7, { who: 'lotti', facing: 0.9, prompt: 'Handeln', talk: (g) => lottiTalk(L, g) });
+    L.sign(-9, 3, 0.9, 'Lottis Laden', 'Extra-Herzen');
+    void lotti;
 
     // ---------- Wasserfall ----------
     const wf = new THREE.Mesh(new THREE.PlaneGeometry(5, 11), new THREE.MeshLambertMaterial({
@@ -194,20 +198,21 @@ export default {
     // ---------- Tore ----------
     L.portal(48, -8, { rot: -Math.PI / 2, to: 'pilz', spawn: 'start', need: 1, label: 'Pilzwald', color: 0x8adf5a });
     L.portal(42, 38, { rot: -Math.PI / 2 - 0.4, to: 'beach', spawn: 'start', need: 4, label: 'Muschelbucht', color: 0x5ad0ff });
-    L.portal(0, -73, { rot: 0, to: 'turm', spawn: 'start', need: 10, label: 'Nebelturm', color: 0xa06aff });
+    L.portal(0, -73, { rot: 0, to: 'turm', spawn: 'start', need: 10, label: 'Krötenturm', color: 0xa06aff });
     L.spawnPoint('start', 0, 12, Math.PI);
     L.spawnPoint('from-pilz', 37, -8, -Math.PI / 2);
     L.spawnPoint('from-beach', 32, 34, -Math.PI / 2 - 0.4);
     L.spawnPoint('from-turm', 0, -62, 0);
     L.sign(38, -2, -Math.PI / 2 - 0.3, 'Pilzwald', '→');
     L.sign(30, 30, -Math.PI / 2 - 0.9, 'Muschelbucht', '→');
-    L.sign(-4, -62, 0.1, 'Nebelturm', 'Gefahr!');
+    L.sign(-4, -62, 0.1, 'Krötenturm', 'Gefahr!');
 
-    // Der Nebelturm am Horizont
+    // Der Krötenturm am Horizont – mit goldener Krone obendrauf
     const tower = new THREE.Group();
     part(tower, G.cyl(9, 12, 80, 10), mat(0x4a4458, { map: L.game.tex.brick }), 0, -10, 0);
-    part(tower, G.cone(13, 22, 10), mat(0x3a2a5a), 0, 70, 0);
-    part(tower, G.cyl(13.5, 13.5, 3, 10), mat(0x3a3448), 0, 68, 0);
+    part(tower, G.cone(13, 22, 10), mat(0x3a5a2a), 0, 70, 0);
+    part(tower, G.cyl(13.5, 13.5, 3, 10), mat(0xc8a030), 0, 68, 0);
+    for (let i = 0; i < 5; i++) part(tower, G.cone(2.2, 6, 4), mat(0xe0b030, { emissive: 0x3a2800 }), Math.cos(i * 1.2566) * 12, 71, Math.sin(i * 1.2566) * 12);
     for (let i = 0; i < 6; i++) part(tower, G.box(2, 3, 0.5), mat(0xffe27a, { emissive: 0x886600 }), Math.cos(i) * 9.8, 20 + i * 8, Math.sin(i) * 9.8, 0, -i + Math.PI / 2, 0);
     tower.position.set(0, 0, -150);
     L.root.add(tower);
@@ -259,10 +264,10 @@ export default {
     L.rock(-50, -4, { s: 2 });
     L.rock(-52, 20, { s: 2.3 });
 
-    // Nebelbart (nur fürs Intro)
-    L.nebelbart = makeNebelbart();
-    L.nebelbart.visible = false;
-    L.root.add(L.nebelbart);
+    // König Krötus (nur fürs Intro)
+    L.koenig = makeToadKing();
+    L.koenig.visible = false;
+    L.root.add(L.koenig);
   },
 
   onEnter(L, g) {
@@ -279,69 +284,112 @@ export default {
   },
 };
 
-async function tildaTalk(L, g) {
+async function tiloTalk(L, g) {
   const s = g.save;
   const n = s.totalShards();
   if (!L.flag('tutorial')) {
     await g.say([
-      { who: 'tilda', text: 'Na, da seid ihr ja. Hört gut zu, ich sage das nicht zweimal ... höchstens dreimal.' },
-      { who: 'tilda', text: 'Mit A springst du. Drückst du in der Luft nochmal A und hältst ihn fest, flattert Kiki mit den Flügeln – der Flattersprung!' },
-      { who: 'tilda', text: 'Mit B rollt Bruno los. In der Luft pickt Kiki mit ihrem Schnabel. Damit zeigt ihr den Nebelkäfern, wo es langgeht!' },
-      { who: 'tilda', text: 'Überall wachsen leckere Waldbeeren – sammelt sie! Und wenn euch die Puste ausgeht, beißt in einen roten Apfel.' },
-      { who: 'tilda', text: 'Die leuchtenden Lernsteine hat mein Urgroßvater aufgestellt. Sie bringen euch neue Tricks bei.' },
-      { who: 'tilda', text: 'Ein Sonnensplitter glitzert oben auf dem Felsturm, westlich vom Sonnenhügel. Dafür braucht ihr den Hochsprung – der Lernstein am Teich zeigt ihn euch.' },
-      { who: 'tilda', text: 'Mit einem Splitter öffnet sich das Pilztor im Osten. Na los, ab mit euch!' },
-      { who: 'kiki', text: 'Jaja, Oma, wir haben es verstanden!' },
+      { who: 'tilo', text: 'Na, da seid ihr ja. Hört gut zu, ich sage das nicht zweimal ... höchstens dreimal.' },
+      { who: 'tilo', text: 'Mit A springst du. Drückst du in der Luft nochmal A und hältst ihn fest, flattert Kiki mit den Flügeln – der Flattersprung!' },
+      { who: 'tilo', text: 'Mit B rollt Bruno los. In der Luft pickt Kiki mit ihrem Schnabel. Damit zeigt ihr den Blechkäfern, wo es langgeht!' },
+      { who: 'tilo', text: 'Überall wachsen leckere Waldbeeren – sammelt sie! Lotti, die Schnecke da drüben, tauscht sie gegen Extra-Herzen. Und wenn euch die Puste ausgeht, beißt in einen roten Apfel.' },
+      { who: 'tilo', text: 'Die leuchtenden Lernsteine hat mein Urgroßvater aufgestellt. Sie bringen euch neue Tricks bei.' },
+      { who: 'tilo', text: 'Ein Sonnensplitter glitzert oben auf dem Felsturm, westlich vom Sonnenhügel. Dafür braucht ihr den Hochsprung – der Lernstein am Teich zeigt ihn euch.' },
+      { who: 'tilo', text: 'Mit einem Splitter öffnet sich das Pilztor im Osten. Na los, ab mit euch!' },
+      { who: 'kiki', text: 'Jaja, Opa, wir haben es verstanden!' },
     ]);
     L.setFlag('tutorial');
     return;
   }
   if (L.flag('restored')) {
-    await g.say([{ who: 'tilda', text: 'Seht nur, wie die Sonne wieder scheint! Ihr zwei seid die Helden des Wurzeltals. Und jetzt ab, es gibt bestimmt noch Beeren zu finden!' }]);
+    await g.say([{ who: 'tilo', text: 'Seht nur, wie die Sonne wieder scheint! Ihr zwei seid die Helden des Wurzeltals. Und jetzt ab, es gibt bestimmt noch Beeren zu finden!' }]);
     return;
   }
   let hint;
   if (!s.hasShard('hub:felsturm')) hint = 'Der Splitter auf dem Felsturm wartet! Lern am Teich den Hochsprung: Z halten, dann A.';
   else if (!s.hasShard('hub:platte')) hint = 'Östlich vom Sonnenhügel liegt eine rissige Steinplatte. Mit dem Stampfer vom Lernstein daneben bekommst du sie kaputt!';
   else if (n < 4) hint = `Im Pilzwald hinter dem grünen Tor gibt es noch Splitter. Für die Muschelbucht braucht ihr 4, ihr habt ${n}.`;
-  else if (n < 10) hint = `Die Muschelbucht ist offen! Für den Nebelturm braucht ihr 10 Splitter. Ihr habt schon ${n}.`;
-  else hint = 'Ihr habt genug Splitter für den Nebelturm! Zeigt diesem Nebelbart, was eine Harke ist. Das Tor liegt im Norden.';
-  await g.say([{ who: 'tilda', text: hint }]);
+  else if (n < 10) hint = `Die Muschelbucht ist offen! Für den Krötenturm braucht ihr 10 Splitter. Ihr habt schon ${n}.`;
+  else hint = 'Ihr habt genug Splitter für den Krötenturm! Zeigt diesem aufgeblasenen König Krötus, was eine Harke ist. Das Tor liegt im Norden.';
+  await g.say([{ who: 'tilo', text: hint }]);
+}
+
+// Lotti tauscht Beeren gegen Extra-Herzen
+const HEART_PRICES = [40, 70, 100];
+async function lottiTalk(L, g) {
+  const s = g.save;
+  if (!L.flag('lotti')) {
+    L.setFlag('lotti');
+    await g.say([
+      { who: 'lotti', text: 'Huch! Willkommen in Lottis Laden – dem langsamsten Laden im ganzen Wurzeltal!' },
+      { who: 'lotti', text: 'Ich sammle Waldbeeren für meine Marmelade. Dafür gebe ich euch etwas ganz Besonderes: Extra-Herzen!' },
+    ]);
+  }
+  const bought = s.data.hearts || 0;
+  if (bought >= HEART_PRICES.length) {
+    await g.say([{ who: 'lotti', text: 'Ausverkauft! Mehr Herzen habe ich nicht. Aber meine Marmelade wird dank euch köstlich!' }]);
+    return;
+  }
+  const price = HEART_PRICES[bought];
+  const wallet = s.wallet();
+  const pick = await g.dialog.choose('lotti', `Ein Extra-Herz kostet ${price} Beeren. Du hast ${wallet} Beeren. Möchtest du eins?`, ['Kaufen', 'Nein danke']);
+  if (pick !== 0) {
+    await g.say([{ who: 'lotti', text: 'Kein Problem. Ich bin sowieso nicht die Schnellste. Komm einfach wieder!' }]);
+    return;
+  }
+  if (wallet < price) {
+    await g.say([{ who: 'lotti', text: `Oje, da fehlen noch ${price - wallet} Beeren. Sammle noch ein bisschen und komm wieder!` }]);
+    return;
+  }
+  s.data.spent = (s.data.spent || 0) + price;
+  s.data.hearts = bought + 1;
+  s.write();
+  const p = g.player;
+  p.maxHealth = g.maxHealth();
+  p.heal(p.maxHealth);
+  g.audio.play('buy');
+  g.particles.emit('sparkle', p.pos.x, p.pos.y + 1.5, p.pos.z, 30, [1, 0.5, 0.6]);
+  g.hud.banner('Extra-Herz!', `Du hast jetzt ${p.maxHealth} Herzen.`, 2.5);
+  await g.say([{ who: 'lotti', text: 'Bitte schön! Und nicht alles auf einmal verbrauchen, ja?' }]);
 }
 
 async function intro(L, g) {
   const p = g.player;
-  const nb = L.nebelbart;
+  const kk = L.koenig;
+  const rig = kk.userData.rig;
   const hx = SUN_HILL.x, hz = SUN_HILL.z, hy = SUN_HILL.h;
-  let floating = true;
-  L.animated.push((dt, t) => {
-    if (!nb.visible || !floating) return;
-    nb.userData.rig.cloud.rotation.y = t * 0.8;
-    nb.userData.rig.orb.material.emissiveIntensity = 1 + Math.sin(t * 6) * 0.5;
-  });
+  // Landeplatz neben dem Sonnenstein
+  const lx = hx + 3.2, lz = hz + 1.5;
   await g.cutscene(async () => {
     g.audio.playMusic('hub');
     await g.camTo([34, 26, 44], [0, 6, -20], 0);
     await g.camTo([16, 17, -22], [hx, hy + 3, hz], 4.5);
     g.audio.playMusic('intro');
-    nb.visible = true;
-    nb.position.set(hx, hy + 14, hz - 2);
-    nb.rotation.y = 0.3;
-    g.particles.emit('fog', hx, hy + 14, hz - 2, 30);
-    g.audio.play('sneeze');
-    await g.tween(1.8, (k) => { nb.position.y = lerp(hy + 14, hy + 6.5, k * (2 - k)); });
-    await g.camTo([hx + 7, hy + 7, hz + 10], [hx, hy + 7.5, hz - 1], 1.2);
+    // Krötus kommt mit einem Riesensprung angeflogen
+    kk.visible = true;
+    kk.rotation.y = -0.6;
+    g.audio.play('croak');
+    await g.tween(1.4, (k) => {
+      kk.position.set(lx + (1 - k) * 30, hy + (1 - k) * 18 + Math.sin(k * Math.PI) * 10, lz - (1 - k) * 40);
+    });
+    g.audio.play('pound');
+    g.renderer.shake = 1.4;
+    g.particles.emit('ring', lx, hy, lz, 20);
+    await g.camTo([hx + 8, hy + 4.5, hz + 10], [lx - 1, hy + 2.6, lz], 1.2);
+    g.audio.play('croak');
     await g.say([
-      { who: 'nebelbart', text: 'HATSCHI! Pfui Deibel, dieses grässliche Sonnenlicht! Überall Blümchen, Vogelgezwitscher und gute Laune ...' },
-      { who: 'nebelbart', text: 'Damit ist jetzt Schluss! Ich, der große Nebelbart, verwandle dieses Tal in eine herrlich graue Suppe!' },
-      { who: 'nebelbart', text: 'Und dieser alberne Sonnenstein ist mir schon lange ein Dorn im Auge. Weg damit!' },
+      { who: 'koenig', text: 'QUAAAK! Na sieh mal einer an. Das größte, goldigste Glitzerding im ganzen Tal – und es gehört noch niemandem!' },
+      { who: 'koenig', text: 'Ab heute gehört es MIR, dem prächtigen König Krötus! Es wird der Mittelpunkt meiner Schatzkammer!' },
+      { who: 'koenig', text: 'Nnngh ... sitzt das fest! Hau ruck!' },
     ]);
-    g.audio.play('zap');
-    const rig = nb.userData.rig;
-    rig.armR.rotation.x = -1.2;
+    // Er zerrt am Stein – bis er zerspringt
+    await g.tween(0.9, (k) => {
+      rig.armL.rotation.x = rig.armR.rotation.x = -1.3 - Math.sin(k * 30) * 0.2;
+      kk.rotation.z = Math.sin(k * 40) * 0.05;
+    });
     g.renderer.shake = 1;
-    for (let i = 0; i < 6; i++) g.particles.emit('sparkle', lerp(hx, hx, i / 6), hy + 6 - i * 0.5, hz, 6, [0.8, 0.6, 1]);
-    await g.wait(0.7);
+    g.audio.play('hit');
+    await g.wait(0.4);
     g.audio.play('shatter');
     L.sunstone.visible = false;
     g.renderer.shake = 1.5;
@@ -356,7 +404,8 @@ async function intro(L, g) {
       const a = (i / TOTAL_SHARDS) * Math.PI * 2;
       flyers.push({ s, vx: Math.cos(a) * 30, vz: Math.sin(a) * 30, vy: 14 + (i % 3) * 5 });
     }
-    rig.armR.rotation.x = 0;
+    rig.armL.rotation.x = rig.armR.rotation.x = 0;
+    kk.rotation.z = 0;
     g.tween(2.5, (k) => {
       for (const f of flyers) {
         f.s.position.set(hx + f.vx * k * 3, hy + 3.2 + f.vy * k * 3 - 20 * k * k, hz + f.vz * k * 3);
@@ -374,16 +423,20 @@ async function intro(L, g) {
     L.root.remove(L.mountains);
     if (L.sunSprite) L.root.remove(L.sunSprite);
     L.sky({ top: c.top, bottom: c.bottom, mountains: 0x8a94a0, seed: 11, sun: false });
-    await g.say([{ who: 'nebelbart', text: 'Hahaha! Die Splitter verstreue ich in alle Winde! Ohne Sonnenstein wird das Tal grau und trüb – genau wie ich es mag! Hatschi!' }]);
-    g.audio.play('sneeze');
+    await g.say([
+      { who: 'koenig', text: 'Wie bitte?! In tausend Stücke?! ... Pah! Dann sammeln meine Blechkäfer eben jeden einzelnen Splitter für mich ein!' },
+      { who: 'koenig', text: 'Und bis dahin bleibt es hier schön grau. Soll sich doch niemand anders an meinem Gold freuen! QUAAAK!' },
+    ]);
+    g.audio.play('croak');
+    // mit zwei großen Sprüngen davon – Richtung Krötenturm
     await g.tween(2, (k) => {
-      nb.position.set(hx, hy + 6.5 + k * 30, hz - k * 90);
-      nb.scale.setScalar(1 - k * 0.6);
+      const hop = Math.abs(Math.sin(k * Math.PI * 2));
+      kk.position.set(lx - k * 4, hy + hop * 14 + k * 20, lz - k * 100);
+      kk.scale.setScalar(1 - k * 0.6);
     });
-    nb.visible = false;
-    floating = false;
+    kk.visible = false;
 
-    // Bruno & Kiki vor dem Haus
+    // Bruno & Kiki vor dem Dachsbau
     p.spawn(0, L.gy(0, 16), 16, 0);
     const f = p.facing;
     await g.camTo([p.pos.x + Math.sin(f) * 5 + 1.5, p.pos.y + 2.2, p.pos.z + Math.cos(f) * 5], [p.pos.x, p.pos.y + 1.3, p.pos.z], 0);
@@ -391,15 +444,15 @@ async function intro(L, g) {
     await g.say([
       { who: 'kiki', text: 'Bruno! BRUNO! Wach auf, du Schlafmütze!' },
       { who: 'bruno', text: 'Hmpf ... Was ist denn, Kiki? Die Sonne ist ja noch nicht mal ... Moment. Warum ist alles so grau?' },
-      { who: 'kiki', text: 'Na, weil dieser miese Nebelbart gerade den Sonnenstein zerschmettert hat! Die Splitter sind überall verstreut!' },
+      { who: 'kiki', text: 'Na, weil dieser aufgeblasene Krötenkönig gerade den Sonnenstein zerbrochen hat! Die Splitter sind überall verstreut!' },
       { who: 'bruno', text: 'Oh nein! Ohne den Sonnenstein wird es im Wurzeltal nie wieder warm und bunt!' },
-      { who: 'kiki', text: 'Genau! Also los, Rucksack auf und ich hüpf rein! Wir holen uns die Splitter zurück und zupfen dem alten Nebelsack den Bart!' },
+      { who: 'kiki', text: 'Genau! Also los, Rucksack auf und ich hüpf rein! Wir holen uns die Splitter zurück, bevor seine Blechkäfer sie finden!' },
     ]);
     await g.camTo([8, p.pos.y + 3, 22], [5, p.pos.y + 1.5, 12], 1);
-    await g.say([{ who: 'tilda', text: 'Nicht so hastig, ihr zwei Wirbelwinde! Kommt erst mal zu mir. Ich bringe euch bei, was ihr wissen müsst.' }]);
+    await g.say([{ who: 'tilo', text: 'Nicht so hastig, ihr zwei Wirbelwinde! Kommt erst mal zu mir. Ich bringe euch bei, was ihr wissen müsst.' }]);
     p.facing = Math.atan2(6 - p.pos.x, 11 - p.pos.z);
   });
-  g.toast('Sprich mit Oma Tilda (B)', 4);
+  g.toast('Sprich mit Opa Tilo (B)', 4);
 }
 
 async function ending(L, g) {
@@ -414,13 +467,13 @@ async function ending(L, g) {
     g.audio.play('shard');
     await g.wait(1);
     p.spawn(hx + 2, hy, hz + 4, Math.PI + 0.4);
-    L.tilda.pos.set(hx - 2.5, hy, hz + 4);
+    L.tilo.pos.set(hx - 2.5, hy, hz + 4);
     await g.camTo([hx + 1, hy + 2.6, hz + 10], [hx, hy + 1.5, hz + 3], 1.2);
     await g.say([
-      { who: 'tilda', text: 'Ihr habt es wirklich geschafft! Ohne Nebelbarts Zauber hat sich der Sonnenstein wieder zusammengefügt!' },
+      { who: 'tilo', text: 'Ihr habt es wirklich geschafft! Jetzt, wo König Krötus fort ist, hat sich der Sonnenstein wieder zusammengefügt!' },
       { who: 'kiki', text: 'Na klar! Mit meinem Köpfchen und Brunos ... äh ... Bauch.' },
       { who: 'bruno', text: 'Hey! ... Ach, egal. Hauptsache, im Wurzeltal ist es wieder warm und bunt.' },
-      { who: 'tilda', text: 'Und das Beste: Heute Abend gibt es Beerenkuchen für alle! Aber vorher ... sammelt ihr bestimmt noch die restlichen Splitter, oder?' },
+      { who: 'tilo', text: 'Und das Beste: Heute Abend gibt es Beerenkuchen für alle! Aber vorher ... sammelt ihr bestimmt noch die restlichen Splitter, oder?' },
       { who: 'kiki', text: 'Kuchen?! Bruno, schneller!' },
     ]);
     p.setState('dance');
