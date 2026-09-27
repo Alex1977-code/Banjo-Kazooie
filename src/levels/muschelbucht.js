@@ -20,6 +20,8 @@ export default {
   music: 'beach',
   reverb: 'beach', // kurz und offen
   ambience: { id: 'beach' }, // Brandung, Möwen
+  wind: 1.2, // frische Meeresbrise
+  ambientFx: ['spray', 'bubbles'],
   underwater: 0x1f6aa8,
 
   atmosphere() {
@@ -116,6 +118,8 @@ export default {
       const boss = L.spawn(new Knack(L, ARENA.x - 3, ARENA.z - 2, knackShard));
       L.boss = boss;
       L.trigger(ARENA.x, ARENA.z, { r: ARENA.r - 2, onEnter: () => boss.start() });
+      // während des Kampfes zieht es sich über der Arena zu
+      L.moodZone(ARENA.x, ARENA.z, { r: ARENA.r, fade: 10, cond: () => boss.active, atmo: { fog: 0x8aa0b8, hemi: 0xb0c0d0, sun: 0xffc8a0, skyTint: 0xa8b8c8, sunIntensity: 1.6, hemiIntensity: 1.3 } });
     }
     L.firefly('f3', ARENA.x - 6, null, ARENA.z + ARENA.r + 5);
     L.berryRing(ARENA.x, ARENA.z, ARENA.r + 4.5, 10);
@@ -162,7 +166,9 @@ export default {
     for (let i = 0; i < 24; i++) {
       const a = sr() * Math.PI * 2, d = 9 + sr() * 12;
       const x = wx + Math.cos(a) * d, z = wz + Math.sin(a) * d;
-      L.add(G.cone(0.4, 2 + sr() * 3, 4), M(x, L.gy(x, z), z, sr() * 6, 1, (sr() - 0.5) * 0.4), 0x2a8a4a, 'leaves');
+      const gy = L.gy(x, z), h = 2 + sr() * 3;
+      // Seegras wiegt sich in der Strömung
+      L.add(G.cone(0.4, h, 4), M(x, gy, z, sr() * 6, 1, (sr() - 0.5) * 0.4), 0x2a8a4a, 'leaves', 0.5, { wind: 1.1, windBase: gy, windH: h });
     }
     L.lernstein(-14, -33, {
       move: 'dive', title: 'Tauchen', facing: Math.PI + 0.4,

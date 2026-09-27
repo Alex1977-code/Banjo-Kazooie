@@ -71,15 +71,22 @@ Luft), sowie an Lernsteinen: **Hochsprung** (Z halten + A), **Stampfer** (Z in d
 - **N64-Look:** Bild wird absichtlich in niedriger Auflösung (240p/360p) gerendert und weich
   hochskaliert, Low-Poly-Modelle aus Grundformen, Vertex-Farben, kleine prozedurale Texturen mit
   bilinearer Filterung, Blob-Schatten, Entfernungsnebel. Auflösung und „Pixel-Look“ in den Optionen.
-- **Sound komplett synthetisiert** (Web Audio): Effekte, Brabbel-Stimmen und eigene Musikstücke pro Welt.
+- **Lebendige Welt:** Bäume, Gras und Blumen wiegen sich im Wind (Vertex-Shader), Wasser mit sanften
+  Wellen, Glitzern und Schaumrand am Ufer, Umgebungspartikel (Pollen, Schmetterlinge, Sporen, Gischt,
+  Asche) und Stimmungszonen, in denen sich Nebel und Licht weich verändern. Teure Extras erst ab „Retro“.
+- **Sound komplett synthetisiert** (Web Audio): Effekte, Brabbel-Stimmen und eigene Musikstücke pro Welt,
+  Hall pro Welt (Impulsantwort aus Rauschen), Umgebungsgeräusche, Richtungshören und dumpfer Klang
+  unter Wasser.
 - **PWA:** Manifest + Service Worker → installierbar und offline spielbar.
 - Spielstand wird automatisch im Browser gespeichert.
 
 ```
 index.html            Spiel
 controller.html       Handy-Controller für den TV-Modus
-src/engine/           Renderer, Eingabe (Touch/Gamepad/Tastatur/Remote), Kamera, Kollision, Audio, Partikel
-src/game/             Spielfigur, Modelle, Gegner & Objekte, Dialoge, Menüs, HUD, Speichern
+src/engine/           Renderer, Eingabe (Touch/Gamepad/Tastatur/Remote), Kamera, Kollision, Audio,
+                      Partikel, Shader-Effekte (fx.js: Wind, Wasser, Uferschaum)
+src/game/             Spielfigur, Modelle, Gegner & Objekte, Dialoge, Menüs, HUD, Speichern,
+                      Stimmungszonen (mood.js), Umgebungspartikel (ambient.js)
 src/levels/           Wurzelhügel, Pilzwald, Muschelbucht, Krötenturm (Datei nebelturm.js)
 vendor/               three.js, PeerJS, QR-Code-Generator (siehe vendor/LICENSES.md)
 tools/                Icon-Generator

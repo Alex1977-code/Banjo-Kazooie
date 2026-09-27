@@ -20,6 +20,8 @@ export default {
   music: 'boss',
   reverb: 'turm', // lang und steinern
   ambience: { id: 'turm' }, // Wind, Tropfen, fernes Grollen
+  wind: 2.2, // hier oben pfeift es
+  ambientFx: ['wisps', 'ash', 'embers'],
   killY: BASE - 22,
 
   atmosphere() {
@@ -62,6 +64,7 @@ export default {
       const diff = Math.atan2(Math.sin(a - topA), Math.cos(a - topA));
       if (Math.abs(diff) < 0.22) continue;
       L.box({ x: Math.cos(a) * (R - 0.4), z: Math.sin(a) * (R - 0.4), y: 0, w: 1.1, h: 1.4, d: 2.4, rot: -a, color: 0x7a7488, tex: 'brick', uv: 0.4, camBlock: false });
+      if (i % 4 === 2) pennant(L, Math.cos(a) * (R - 0.4), Math.sin(a) * (R - 0.4), a);
     }
     // Goldener Thron und Münzhaufen – Krötus liebt Gold
     L.box({ x: 0, z: -13.5, y: 0, w: 3.2, h: 1.2, d: 2, color: 0xd9ab34, tex: 'plain' });
@@ -112,23 +115,33 @@ export default {
     L.berryRing(22.5, 34, 1.8, 6, BASE + 3.3);
     L.apple(22.5, 34, BASE + 2.4);
 
-    // Blitze
+    // trockene Grasbüschel auf der Bonusinsel – hier oben weht es kräftig
+    for (let i = 0; i < 7; i++) {
+      const a = i * 0.9, d = 1 + (i % 3) * 0.6, gx = 22.5 + Math.cos(a) * d, gz = 34 + Math.sin(a) * d, gy = BASE + 2.15;
+      for (let k = 0; k < 3; k++) {
+        L.add(G.cone(0.08, 0.7, 3), M(gx + k * 0.12, gy, gz, a + k, 1, (k - 1) * 0.3), 0xa8a060, 'plain', 0.5, { wind: 1.2, windBase: gy, windH: 0.7 });
+      }
+    }
+
+    // Blitze (hellen das Licht kurz auf, die Stimmungszone rechnet sie dazu)
     let flashT = 3;
+    L.lightFlash = 0;
     L.animated.push((dt) => {
       flashT -= dt;
-      const r = L.game.renderer;
       if (flashT < 0) {
         flashT = 5 + Math.random() * 6;
-        r.hemi.intensity = 4;
+        L.lightFlash = 2.4;
         L.game.audio.play('pound');
       }
-      r.hemi.intensity = damp(r.hemi.intensity, 1.6, 4, dt);
+      L.lightFlash = damp(L.lightFlash, 0, 4, dt);
     });
 
     if (!L.game.save.data.flags['turm:won']) {
       L.boss = L.spawn(new Boss(L));
       L.trigger(0, 0, { y: 0, r: 13, h: 5, onEnter: () => L.boss.start() });
     }
+    // Stimmung: dunkler und bedrohlicher, solange König Krötus kämpft
+    L.moodZone(0, 0, { r: 16, fade: 8, cond: () => L.boss?.active && L.boss.state !== 'dead', atmo: { fog: 0x3a2a4a, hemi: 0xa088d0, sun: 0xff9aa0, skyTint: 0x9a8ab0, sunIntensity: 1.2, hemiIntensity: 1.3, fogNear: 30, fogFar: 140 } });
   },
 
   onEnter(L, g) {
@@ -152,6 +165,20 @@ export default {
 
 // ---------- Goldmünze (Wurfgeschoss) ----------
 const GRAV = 16;
+// Königlicher Wimpel an den Zinnen: je weiter vom Mast, desto stärker flattert er
+function pennant(L, x, z, a) {
+  const top = 3.4;
+  L.add(G.cyl(0.07, 0.07, top, 5), M(x, 1.4, z), 0x3a3448, 'plain');
+  const len = 1.6, tx = -Math.sin(a), tz = Math.cos(a);
+  const flag = new THREE.PlaneGeometry(len, 0.8).translate(len / 2, 0, 0);
+  const sway = { doubleSide: true, wind: (px, py, pz) => Math.min(1, Math.hypot(px - x, pz - z) / len) * 1.2 };
+  L.add(flag, M(x, 1.4 + top - 0.5, z, Math.atan2(tx, tz) - Math.PI / 2), 0x6a2a8a, 'plain', 0.5, sway);
+  // goldener Streifen auf beiden Seiten, leicht vor dem Tuch
+  for (const s of [-1, 1]) {
+    L.add(new THREE.PlaneGeometry(len * 0.9, 0.16).translate(len * 0.45, 0, 0), M(x + Math.cos(a) * 0.03 * s, 1.4 + top - 0.75, z + Math.sin(a) * 0.03 * s, Math.atan2(tx, tz) - Math.PI / 2), 0xe8b830, 'plain', 0.5, sway);
+  }
+}
+
 class Coin extends Entity {
   constructor(L, x, y, z, tx, tz, flight) {
     super(L, x, y, z);

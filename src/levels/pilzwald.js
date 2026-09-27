@@ -4,6 +4,7 @@ import { G, M, mat, part } from '../engine/geo.js';
 import { defaultColorRule } from '../game/terrain.js';
 import { makeHedgehog, makeCloud, makePilz } from '../game/models.js';
 import { rng, fbm } from '../engine/util.js';
+import { waterMaterial } from '../engine/fx.js';
 
 const OAK = { x: 0, z: -14, r: 5.2 };
 const SWAMP = { x: -42, z: 10, r: 16, y: -0.7 };
@@ -20,6 +21,8 @@ export default {
   reverb: 'pilz', // weich und dicht
   // Grillen, Käuzchen, Blubbern am Giftsumpf
   ambience: { id: 'pilz', spots: [{ x: SWAMP.x, y: SWAMP.y, z: SWAMP.z, r: SWAMP.r - 2, sound: 'blub', every: [0.25, 1.1], ref: 5, range: 32 }] },
+  wind: 0.7, // im dichten Wald nur ein Lüftchen
+  ambientFx: ['fireflies', 'spores'],
 
   atmosphere() {
     return {
@@ -60,9 +63,11 @@ export default {
     L.root.add(moon);
 
     // ---------- Giftsumpf ----------
-    const swamp = new THREE.Mesh(new THREE.CircleGeometry(SWAMP.r + 2, 28).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({
+    // zähe, langsame Wellen und grünlicher Schaum am Rand
+    const swamp = new THREE.Mesh(new THREE.RingGeometry(0.01, SWAMP.r + 2, 28, 5).rotateX(-Math.PI / 2), waterMaterial(new THREE.MeshLambertMaterial({
       color: 0x6a9a2a, map: L.game.tex.water.clone(), transparent: true, opacity: 0.92, emissive: 0x1a300a,
-    }));
+    }), { amp: 0.06, speed: 0.5, glint: 0.4 }));
+    L.foam({ cx: SWAMP.x, cz: SWAMP.z, r: SWAMP.r + 2, y: SWAMP.y, tint: 1 });
     swamp.material.map.needsUpdate = true;
     swamp.material.map.repeat.set(4, 4);
     swamp.position.set(SWAMP.x, SWAMP.y, SWAMP.z);
@@ -124,9 +129,9 @@ export default {
     const cr = rng(7);
     for (let i = 0; i < 10; i++) {
       const a = (i / 10) * Math.PI * 2;
-      L.add(G.blob(4 + cr() * 2, i), M(OAK.x + Math.cos(a) * 9, crown + 2 + cr() * 4, OAK.z + Math.sin(a) * 9), new THREE.Color(0x3f8a3a).multiplyScalar(0.8 + cr() * 0.3), 'leaves', 0.3, { shade: 0.1 });
+      L.add(G.blob(4 + cr() * 2, i), M(OAK.x + Math.cos(a) * 9, crown + 2 + cr() * 4, OAK.z + Math.sin(a) * 9), new THREE.Color(0x3f8a3a).multiplyScalar(0.8 + cr() * 0.3), 'leaves', 0.3, { shade: 0.1, wind: 0.6 });
     }
-    L.add(G.blob(6, 3), M(OAK.x, crown + 9, OAK.z, 0, [1.4, 0.8, 1.4]), 0x4a9a3a, 'leaves', 0.3, { shade: 0.1 });
+    L.add(G.blob(6, 3), M(OAK.x, crown + 9, OAK.z, 0, [1.4, 0.8, 1.4]), 0x4a9a3a, 'leaves', 0.3, { shade: 0.1, wind: 0.5 });
     L.shard('eiche', OAK.x, crown + 1.4, OAK.z);
     L.firefly('f2', stepPos[7][0], stepPos[7][1] + 1.5, stepPos[7][2]);
     // Gesicht der Eiche (redet!)
@@ -219,6 +224,9 @@ export default {
       const a = (i / 8) * Math.PI * 2;
       L.mushroomDeco(HOLLOW.x + Math.cos(a) * 9, HOLLOW.z + Math.sin(a) * 9, { h: 1.5 + (i % 2), r: 1, color: 0xf06aa0, collide: false });
     }
+    // Stimmung: golden warm bei Opa Eiche, kalt und dämmrig unten in der Senke
+    L.moodZone(OAK.x, OAK.z, { r: 11, fade: 10, atmo: { fog: 0xb4a896, hemi: 0xffe0b0, sun: 0xffd090, skyTint: 0xfff0d8, hemiIntensity: 2.0 } });
+    L.moodZone(HOLLOW.x, HOLLOW.z, { r: 7, fade: 7, atmo: { fog: 0x6a7aa8, hemi: 0xa8c0ff, sun: 0xa0b8ff, skyTint: 0xc8d4ff, sunIntensity: 1.1, hemiIntensity: 1.4, fogNear: 25, fogFar: 120 } });
     // unten in der Senke hallt es
     L.soundZone(HOLLOW.x, HOLLOW.z, { r: 8, y: L.gy(HOLLOW.x, HOLLOW.z) - 0.5, h: 3.5, reverb: 0.3, lowpass: 6000 });
     L.firefly('f4', HOLLOW.x - 4, null, HOLLOW.z + 3);

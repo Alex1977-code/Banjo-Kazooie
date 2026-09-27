@@ -3,6 +3,7 @@
 // einzigen Mesh zusammengefasst – das hält die Draw-Calls auf Handys niedrig.
 import * as THREE from 'three';
 import { rng } from './util.js';
+import { windMaterial } from './fx.js';
 
 const _m = new THREE.Matrix4();
 const _q = new THREE.Quaternion();
@@ -111,6 +112,8 @@ export class Batch {
 
   // color: Hex/Color oder Funktion (x, y, z) => THREE.Color
   // uvScale: Zahl = Welt-UVs, null = UVs der Geometrie behalten (skaliert mit uvRepeat)
+  // opts.wind: wie stark das Teil im Wind wiegt; mit opts.windBase/windH (Welt-Höhe
+  // des Fußpunkts und Höhe) bleibt der Fuß fest und nur die Spitze bewegt sich.
   add(geo, matrix, color = 0xffffff, tex = 'plain', uvScale = 0.5, opts = {}) {
     let g = geo.index ? geo.toNonIndexed() : geo.clone();
     if (!g.attributes.normal) g.computeVertexNormals();
@@ -140,6 +143,17 @@ export class Batch {
       grp = { tex, opts, parts: [] };
       this.groups.set(key, grp);
     }
+    let wind = null;
+    if (opts.wind) {
+      wind = new Float32Array(n);
+      const b = opts.windBase, hh = opts.windH || 1;
+      for (let i = 0; i < n; i++) {
+        const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+        if (typeof opts.wind === 'function') wind[i] = opts.wind(x, y, z);
+        else wind[i] = b == null ? opts.wind : opts.wind * Math.max(0, Math.min(1, (y - b) / hh));
+      }
+      grp.wind = true;
+    }
     const uvAttr = g.attributes.uv;
     const uvArr = new Float32Array(uvAttr.count * 2);
     const rep = opts.uvRepeat ?? 1;
@@ -152,6 +166,7 @@ export class Batch {
       nor: g.attributes.normal.array,
       uv: uvArr,
       col,
+      wind,
     });
     g.dispose();
   }
@@ -163,12 +178,14 @@ export class Batch {
       for (const p of grp.parts) n += p.pos.length;
       const pos = new Float32Array(n), nor = new Float32Array(n), col = new Float32Array(n);
       const uv = new Float32Array((n / 3) * 2);
+      const wind = grp.wind ? new Float32Array(n / 3) : null;
       let o = 0, ou = 0;
       for (const p of grp.parts) {
         pos.set(p.pos, o);
         nor.set(p.nor, o);
         col.set(p.col, o);
         uv.set(p.uv, ou);
+        if (wind && p.wind) wind.set(p.wind, o / 3);
         o += p.pos.length;
         ou += p.uv.length;
       }
@@ -177,6 +194,7 @@ export class Batch {
       geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
       geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
       geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+      if (wind) geo.setAttribute('wind', new THREE.BufferAttribute(wind, 1));
       geo.computeBoundingSphere();
       const mat = new THREE.MeshLambertMaterial({
         map: this.textures[grp.tex] || this.textures.plain,
@@ -185,6 +203,7 @@ export class Batch {
         alphaTest: grp.opts.alphaTest ?? 0,
         side: grp.opts.doubleSide ? THREE.DoubleSide : THREE.FrontSide,
       });
+      if (wind) windMaterial(mat);
       const mesh = new THREE.Mesh(geo, mat);
       mesh.matrixAutoUpdate = false;
       parent.add(mesh);

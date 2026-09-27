@@ -840,6 +840,14 @@ export class Audio {
         this.vibrato(o, t + 1.0, 1.0, 7, 6);
         break;
       }
+      case 'crackle': {
+        // knisterndes Lagerfeuer
+        const d = out(0);
+        const n = 1 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < n; i++) this.noise(t + i * rand(0.02, 0.07), 0.015, rand(0.15, 0.35), d, { type: 'highpass', f: rand(1500, 3500), attack: 0.001 });
+        if (Math.random() < 0.15) this.noise(t, 0.12, 0.2, d, { type: 'lowpass', f: 300, attack: 0.005 });
+        break;
+      }
       case 'blub': {
         const d = out(0);
         const f = rand(110, 180);

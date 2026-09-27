@@ -1,6 +1,6 @@
 // Service Worker: macht das Spiel offline spielbar und installierbar.
 // Bei Änderungen am Spiel VERSION erhöhen, damit Handys die neue Version laden.
-const VERSION = 'bruno-kiki-v4';
+const VERSION = 'bruno-kiki-v5';
 
 const CORE = [
   './',
@@ -19,6 +19,7 @@ const CORE = [
   'src/main.js',
   'src/controller.js',
   'src/engine/audio.js',
+  'src/engine/fx.js',
   'src/engine/camera.js',
   'src/engine/collision.js',
   'src/engine/geo.js',
@@ -30,11 +31,13 @@ const CORE = [
   'src/engine/touch.js',
   'src/engine/util.js',
   'src/game/dialog.js',
+  'src/game/ambient.js',
   'src/game/entities.js',
   'src/game/game.js',
   'src/game/hud.js',
   'src/game/level.js',
   'src/game/menus.js',
+  'src/game/mood.js',
   'src/game/models.js',
   'src/game/player.js',
   'src/game/portraits.js',

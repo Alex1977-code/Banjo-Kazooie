@@ -7,6 +7,7 @@ import { TouchControls } from '../engine/touch.js';
 import { Audio } from '../engine/audio.js';
 import { CameraRig } from '../engine/camera.js';
 import { Particles } from '../engine/particles.js';
+import { FX, updateFx, setFxDetail } from '../engine/fx.js';
 import { Player } from './player.js';
 import { Save } from './save.js';
 import { Hud } from './hud.js';
@@ -15,6 +16,8 @@ import { Portraits } from './portraits.js';
 import { Level } from './level.js';
 import { BlobShadow } from './entities.js';
 import { Menus } from './menus.js';
+import { Mood } from './mood.js';
+import { Ambient } from './ambient.js';
 import { LEVELS } from '../levels/index.js';
 
 const $ = (s) => document.querySelector(s);
@@ -33,6 +36,9 @@ export class Game {
     this.portraits = new Portraits(this.renderer);
     this.particles = new Particles(this.renderer.scene, this.tex);
     this.player = new Player(this);
+    this.mood = new Mood(this);
+    this.ambient = new Ambient(this);
+    this.fxWind = 1;
     this.renderer.scene.add(this.player.model);
     this.camRig = new CameraRig(this.renderer.camera, null);
     this.level = null;
@@ -67,6 +73,7 @@ export class Game {
     const s = this.save.data.settings;
     this.renderer.setQuality(s.quality);
     this.renderer.setPixelated(s.pixel);
+    setFxDetail(s.quality !== 'n64'); // zweite Wasserebene, Glitzern, Schaummuster erst ab "retro"
     this.audio.setVolumes(s.music, s.sfx, s.ambience);
     this.audio.setLite(s.quality === 'n64');
     this.input.vibrate = s.vibrate;
@@ -162,6 +169,7 @@ export class Game {
     this.timers.length = 0;
     this.tweens.length = 0;
     this.playerShadow = null;
+    this.ambient.setup({ def: {} });
     this.dying = false;
     this.falling = false;
     this.hud.setBoss(null);
@@ -184,6 +192,8 @@ export class Game {
     this.renderer.setAtmosphere(def.atmosphere(L, this));
     this.underwater = false;
     this.audio.setWorld(def.reverb || def.id, def.ambience || { id: def.id });
+    this.setWorldFx(L);
+    this.ambient.setup(L);
     this.hud.setBoss(null);
     this.playerShadow = new BlobShadow(L, 1.5);
 
@@ -364,6 +374,7 @@ export class Game {
     const steps = Math.min(4, Math.ceil(dt / (1 / 60) - 0.01));
     const h = dt / steps;
     for (let i = 0; i < steps; i++) this.update(h, i === 0);
+    updateFx(dt);
     this.particles.update(dt, this.renderer.internalHeight);
     this.hud.update(dt);
     this.menus.render?.(dt);
@@ -424,6 +435,8 @@ export class Game {
     this.camRig.update(dt, this.player, camInput);
     this.playerShadow?.update(this.player.pos.x, this.player.pos.y, this.player.pos.z);
     if (first) this.updateListener(this.player.pos);
+    this.mood.update(dt);
+    this.ambient.update(dt);
 
     // Unter Wasser: bläulicher, dichter Nebel
     if (L.def.underwater != null) {
@@ -460,6 +473,12 @@ export class Game {
     this.level.update(dt);
   }
 
+  // Wind und Stimmungszonen der Welt
+  setWorldFx(L) {
+    this.fxWind = FX.wind.value = L.def.wind ?? 1;
+    this.mood.reset(L);
+  }
+
   // Richtungshören: links/rechts relativ zur Kamera, Entfernung zum Spieler
   updateListener(focus) {
     const cam = this.renderer.camera;
@@ -478,6 +497,7 @@ export class Game {
     this.camRig.world = L.world;
     this.renderer.setAtmosphere(def.atmosphere(L, this));
     this.audio.setWorld(def.reverb || def.id, def.ambience || { id: def.id });
+    this.setWorldFx(L);
     this.player.model.visible = false;
     this.player.pos.set(9999, -500, 9999);
   }
