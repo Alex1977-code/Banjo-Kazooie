@@ -67,7 +67,8 @@ export class Game {
     const s = this.save.data.settings;
     this.renderer.setQuality(s.quality);
     this.renderer.setPixelated(s.pixel);
-    this.audio.setVolumes(s.music, s.sfx);
+    this.audio.setVolumes(s.music, s.sfx, s.ambience);
+    this.audio.setLite(s.quality === 'n64');
     this.input.vibrate = s.vibrate;
     this.camRig.invertY = s.invertY;
   }
@@ -182,6 +183,7 @@ export class Game {
     this.camRig.world = L.world;
     this.renderer.setAtmosphere(def.atmosphere(L, this));
     this.underwater = false;
+    this.audio.setWorld(def.reverb || def.id, def.ambience || { id: def.id });
     this.hud.setBoss(null);
     this.playerShadow = new BlobShadow(L, 1.5);
 
@@ -421,6 +423,7 @@ export class Game {
     const camInput = { camX: input.camX * cs, camY: input.camY * inv * cs, camDragX: input.camDragX * cs, camDragY: input.camDragY * inv * cs };
     this.camRig.update(dt, this.player, camInput);
     this.playerShadow?.update(this.player.pos.x, this.player.pos.y, this.player.pos.z);
+    if (first) this.updateListener(this.player.pos);
 
     // Unter Wasser: bläulicher, dichter Nebel
     if (L.def.underwater != null) {
@@ -428,6 +431,7 @@ export class Game {
       const under = c.y < L.world.waterAt(c.x, c.z) - 0.05;
       if (under !== this.underwater) {
         this.underwater = under;
+        this.audio.setUnderwater(under); // Musik und Effekte klingen unter Wasser dumpf
         const uw = L.def.underwater;
         this.renderer.setAtmosphere(under ? { sky: uw, fog: uw, fogNear: 1, fogFar: 38, hemi: 0x9ad8ff, ground: 0x1a4a6a, sunIntensity: 1.2, hemiIntensity: 1.6 } : L.def.atmosphere(L, this));
       }
@@ -452,7 +456,15 @@ export class Game {
     const c = this.level.def.titleCam || { x: 0, y: 14, z: 0, r: 50, h: 18 };
     cam.position.set(c.x + Math.sin(t) * c.r, c.y + c.h, c.z + Math.cos(t) * c.r);
     cam.lookAt(c.x, c.y, c.z);
+    this.updateListener(cam.position);
     this.level.update(dt);
+  }
+
+  // Richtungshören: links/rechts relativ zur Kamera, Entfernung zum Spieler
+  updateListener(focus) {
+    const cam = this.renderer.camera;
+    const e = cam.matrixWorld.elements;
+    this.audio.setListener(cam.position, e[0], e[2], focus);
   }
 
   // Hub im Hintergrund des Titelbildschirms laden
@@ -465,6 +477,7 @@ export class Game {
     L.build();
     this.camRig.world = L.world;
     this.renderer.setAtmosphere(def.atmosphere(L, this));
+    this.audio.setWorld(def.reverb || def.id, def.ambience || { id: def.id });
     this.player.model.visible = false;
     this.player.pos.set(9999, -500, 9999);
   }

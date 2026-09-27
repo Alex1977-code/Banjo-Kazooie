@@ -17,6 +17,9 @@ export default {
   name: 'Pilzwald',
   subtitle: 'Welt 1',
   music: 'pilz',
+  reverb: 'pilz', // weich und dicht
+  // Grillen, Käuzchen, Blubbern am Giftsumpf
+  ambience: { id: 'pilz', spots: [{ x: SWAMP.x, y: SWAMP.y, z: SWAMP.z, r: SWAMP.r - 2, sound: 'blub', every: [0.25, 1.1], ref: 5, range: 32 }] },
 
   atmosphere() {
     return {
@@ -216,6 +219,8 @@ export default {
       const a = (i / 8) * Math.PI * 2;
       L.mushroomDeco(HOLLOW.x + Math.cos(a) * 9, HOLLOW.z + Math.sin(a) * 9, { h: 1.5 + (i % 2), r: 1, color: 0xf06aa0, collide: false });
     }
+    // unten in der Senke hallt es
+    L.soundZone(HOLLOW.x, HOLLOW.z, { r: 8, y: L.gy(HOLLOW.x, HOLLOW.z) - 0.5, h: 3.5, reverb: 0.3, lowpass: 6000 });
     L.firefly('f4', HOLLOW.x - 4, null, HOLLOW.z + 3);
     L.berryLine(-8, -8, -40, -40, 7);
 

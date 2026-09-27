@@ -29,6 +29,9 @@ export default {
   name: 'Wurzelhügel',
   subtitle: 'Brunos Zuhause',
   music: 'hub',
+  reverb: 'hub', // mittlerer Hall
+  // Vögel, leichter Wind – und der Wasserfall ist aus seiner Richtung zu hören
+  ambience: { id: 'hub', spots: [{ x: -57.5, y: 1, z: 8, loop: 'falls', vol: 0.45, ref: 8, range: 55 }] },
   titleCam: { x: 0, y: 6, z: -8, r: 58, h: 22 },
 
   atmosphere(L) {

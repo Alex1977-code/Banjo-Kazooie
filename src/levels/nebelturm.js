@@ -18,6 +18,8 @@ export default {
   name: 'Krötenturm',
   subtitle: 'Finale',
   music: 'boss',
+  reverb: 'turm', // lang und steinern
+  ambience: { id: 'turm' }, // Wind, Tropfen, fernes Grollen
   killY: BASE - 22,
 
   atmosphere() {
@@ -178,7 +180,7 @@ class Coin extends Entity {
     if (this.pos.y < gy + 0.2 || this.life <= 0) this.pop();
   }
   pop() {
-    this.game.audio.play('coin');
+    this.game.audio.play('coin', this.pos);
     this.game.particles.emit('sparkle', this.pos.x, this.pos.y + 0.2, this.pos.z, 8, [1, 0.8, 0.3]);
     this.remove();
   }
@@ -308,7 +310,7 @@ class Boss extends Entity {
       if (this.jumpDur && this.jumpT < this.jumpDur) {
         if (this.updateJump(dt)) {
           g.particles.emit('dust', this.pos.x, 0, this.pos.z, 6);
-          g.audio.play('land');
+          g.audio.play('land', this.pos);
         }
       } else {
         this.hopT -= dt;
@@ -326,7 +328,7 @@ class Boss extends Entity {
         if (this.casts >= [0, 4, 5, 6][ph]) {
           this.casts = 0;
           this.set('windup');
-          g.audio.play('croak');
+          g.audio.play('croak', this.pos);
           g.say([{ who: 'koenig', text: ['QUAAAK!', 'QUAAAAAAK!', 'BAUCHPLATSCHER!'][ph - 1] }]);
         }
       }
@@ -348,7 +350,7 @@ class Boss extends Entity {
       this.facing += dt * 8;
       if (this.updateJump(dt)) {
         this.set('dizzy');
-        g.audio.play('pound');
+        g.audio.play('pound', this.pos);
         g.renderer.shake = 1.2;
         g.input.rumble(300, 1);
         g.particles.emit('ring', this.pos.x, 0, this.pos.z, 24);
@@ -404,7 +406,7 @@ class Boss extends Entity {
 
   cast() {
     const g = this.game, p = this.player, ph = this.phase;
-    g.audio.play('coin');
+    g.audio.play('coin', this.pos);
     this.rig.armR.rotation.x = -1.6;
     const ox = this.pos.x, oy = this.pos.y + 3.2, oz = this.pos.z;
     const spread = ph === 1 ? [0] : ph === 2 ? [-0.3, 0, 0.3] : [-0.5, -0.25, 0, 0.25, 0.5];
@@ -422,7 +424,7 @@ class Boss extends Entity {
   hit() {
     const g = this.game;
     this.hp--;
-    g.audio.play('bosshit');
+    g.audio.play('bosshit', this.pos);
     g.renderer.shake = 1;
     g.input.rumble(300, 1);
     g.particles.emit('pop', this.pos.x, this.pos.y + 2, this.pos.z, 16, [0.7, 0.8, 0.4]);

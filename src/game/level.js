@@ -381,6 +381,15 @@ export class Level {
   cactus(x, z, o) { return this.spawn(new Cactus(this, x, z, o)); }
   portal(x, z, o) { return this.spawn(new Portal(this, x, z, o)); }
   trigger(x, z, o) { return this.spawn(new Trigger(this, x, o.y ?? this.groundTop(x, z), z, o)); }
+  // Klangzone (Höhle, Senke, Wrack): mehr Hall, optional dumpfer – weich ein- und ausgeblendet
+  soundZone(x, z, { r = 8, h = 6, y, reverb = 0.25, lowpass } = {}) {
+    const space = { reverb, lowpass };
+    return this.trigger(x, z, {
+      r, h, y, once: false, always: true,
+      onEnter: (g) => g.audio.setSpace(space),
+      onExit: (g) => { if (g.audio.space === space) g.audio.setSpace(null); },
+    });
+  }
   platform(o) { return this.spawn(new Platform(this, o)); }
   breakable(x, z, o) { return this.spawn(new Breakable(this, x, o.y ?? this.gy(x, z), z, o)); }
   poundSpot(x, z, o) { return this.spawn(new PoundSpot(this, x, z, o)); }
