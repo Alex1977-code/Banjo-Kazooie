@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#2a1a4a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Bruno & Kiki">
+  <meta name="description" content="Bruno & Kiki – ein 3D-Jump'n'Run im Stil der N64-Ära für Handy, Tablet und Fernseher.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>Bruno & Kiki</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
+</head>
+<body>
+  <div id="app">
+    <canvas id="game"></canvas>
+
+    <div id="hud" hidden>
+      <div class="hud-left">
+        <div id="hearts"></div>
+        <div id="air" hidden><div class="air-fill"></div><span>Luft</span></div>
+      </div>
+      <div class="hud-right">
+        <div class="counter" id="cnt-shards"><i class="ico ico-shard"></i><span>0</span></div>
+        <div class="counter" id="cnt-berries"><i class="ico ico-berry"></i><span>0</span></div>
+        <div class="counter" id="cnt-fireflies" hidden><i class="ico ico-firefly"></i><span>0</span></div>
+      </div>
+      <div id="toast"></div>
+      <div id="banner"></div>
+      <div id="level-title"><small></small><span></span></div>
+      <div id="prompt"></div>
+      <div id="bossbar" hidden><span></span><div class="bar"><div class="fill"></div></div></div>
+    </div>
+
+    <div id="touch" hidden></div>
+
+    <div id="letterbox"><div></div><div></div></div>
+
+    <div id="dialog" hidden>
+      <div class="dlg-portrait"><canvas width="96" height="96"></canvas></div>
+      <div class="dlg-body">
+        <div class="dlg-name"></div>
+        <div class="dlg-text"></div>
+      </div>
+      <div class="dlg-next">▼</div>
+    </div>
+
+    <div id="skip-hint" hidden>Start / Pause: Szene überspringen</div>
+
+    <div id="screens"></div>
+
+    <div id="fade"></div>
+
+    <div id="rotate-hint">
+      <div class="phone-icon"></div>
+      <p>Bitte das Handy quer halten</p>
+    </div>
+
+    <div id="boot">
+      <div class="boot-logo">Bruno <em>&amp;</em> Kiki</div>
+      <div class="boot-bar"><div></div></div>
+      <noscript>Dieses Spiel braucht JavaScript.</noscript>
+    </div>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

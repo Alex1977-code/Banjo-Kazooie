@@ -1,0 +1,12 @@
+{
+  "name": "bruno-und-kiki",
+  "version": "1.0.0",
+  "description": "3D-Jump'n'Run im Stil der N64-Ära für Handy, Tablet und Fernseher (Browser/PWA).",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npx --yes http-server -c-1 -p 8080 .",
+    "icons": "node tools/make-icons.mjs"
+  },
+  "license": "MIT"
+}
