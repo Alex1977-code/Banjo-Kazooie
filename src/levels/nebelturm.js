@@ -234,7 +234,7 @@ class Boss extends Entity {
         this.level.setFlag('bossIntro');
         await g.say([
           { who: 'nebelbart', text: 'Ihr schon wieder?! HATSCHI! Wie seid ihr an meinen Nebelkäfern und dem Krabbenkäpt\'n vorbeigekommen?' },
-          { who: 'kiki', text: 'Mit Köpfchen, Schnabel und einem sehr dicken Dachs!' },
+          { who: 'kiki', text: 'Mit Köpfchen, Schnabel und einem sehr dicken Bären!' },
           { who: 'bruno', text: 'Hey! ... Aber sie hat recht. Gib den Sonnenstein zurück, Nebelbart!' },
           { who: 'nebelbart', text: 'Niemals! Das Wurzeltal bleibt grau! Ich blase euch mit meinen Nebelkugeln vom Turm! Hatschi!' },
         ]);

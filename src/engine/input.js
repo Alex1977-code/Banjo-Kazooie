@@ -14,7 +14,8 @@ export const B = {
 const KEYMAP = {
   Space: B.JUMP, KeyK: B.JUMP, Enter: B.JUMP,
   KeyJ: B.ATTACK, KeyX: B.ATTACK, KeyF: B.ATTACK,
-  ShiftLeft: B.CROUCH, ShiftRight: B.CROUCH, KeyL: B.CROUCH, KeyC: B.CROUCH,
+  // Z = Ducken/Stampfen; KeyY ist die Z-Taste auf deutschen Tastaturen (QWERTZ)
+  KeyZ: B.CROUCH, KeyY: B.CROUCH, ShiftLeft: B.CROUCH, ShiftRight: B.CROUCH, KeyL: B.CROUCH, KeyC: B.CROUCH,
   Escape: B.PAUSE | B.BACK, KeyP: B.PAUSE, Backspace: B.BACK,
   KeyR: B.RECENTER, Tab: B.RECENTER,
   ArrowUp: B.UP, ArrowDown: B.DOWN, ArrowLeft: B.LEFT, ArrowRight: B.RIGHT,

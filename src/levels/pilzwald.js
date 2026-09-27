@@ -289,7 +289,7 @@ async function oakTalk(L, g) {
     return;
   }
   await g.say([
-    { who: 'eiche', text: 'Hohoho ... wer klopft denn da an meine Rinde? Ein Dachs und eine Elster, wie ungewöhnlich.' },
+    { who: 'eiche', text: 'Hohoho ... wer klopft denn da an meine Rinde? Ein Bär mit einem Rennkuckuck im Rucksack, wie ungewöhnlich.' },
     { who: 'eiche', text: 'Seit heute Morgen kitzelt es fürchterlich in meiner Krone. Irgendetwas Goldenes ist dort oben gelandet.' },
     { who: 'eiche', text: 'Klettert doch über die Baumpilze an meinem Stamm nach oben und nehmt es mit. Aber tretet mir nicht auf die Äste!' },
   ]);

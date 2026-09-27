@@ -492,7 +492,7 @@ class Knack extends Entity {
     const g = this.game;
     g.audio.playMusic('beach');
     await g.cutscene(async () => {
-      await g.say([{ who: 'knack', text: 'Schon gut, schon gut! Ich ergebe mich! Nehmt das Glitzerding ... und erzählt bloß keinem, dass mich ein Dachs besiegt hat!' }]);
+      await g.say([{ who: 'knack', text: 'Schon gut, schon gut! Ich ergebe mich! Nehmt das Glitzerding ... und erzählt bloß keinem, dass mich ein Bär mit einem Vogel im Rucksack besiegt hat!' }]);
       await g.camTo([ARENA.x + 6, this.level.gy(ARENA.x, ARENA.z) + 4, ARENA.z + 7], this.shard.pos, 0.8);
       this.shard.reveal();
       await g.wait(1);

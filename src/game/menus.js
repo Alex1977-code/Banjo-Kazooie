@@ -267,7 +267,7 @@ export class Menus {
         <tr><td>Kamera</td><td>rechte Hälfte wischen</td><td>rechter Stick</td><td>Q / E</td></tr>
         <tr><td>Springen</td><td>A</td><td>A / Kreuz</td><td>Leertaste</td></tr>
         <tr><td>Angriff / Reden</td><td>B</td><td>B / X</td><td>J</td></tr>
-        <tr><td>Ducken</td><td>Z</td><td>Schultertasten</td><td>Shift / K</td></tr>
+        <tr><td>Ducken / Stampfen</td><td>Z</td><td>Schultertasten</td><td>Z / C / Shift</td></tr>
         <tr><td>Pause</td><td>II oben rechts</td><td>Start</td><td>Esc</td></tr>
       </table>
       <h3>Bewegungen</h3>

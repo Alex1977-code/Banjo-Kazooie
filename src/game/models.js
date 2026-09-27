@@ -19,102 +19,107 @@ function eyeOn(parent, rad, x, y, r, look = 0, oy = 0) {
   return eye(parent, x, y + oy, z - r * 0.3, r, look);
 }
 
-let badgerTex = null;
-function badgerHeadTexture() {
-  if (badgerTex) return badgerTex;
+// Federkleid des Rennkuckucks: braun mit dunklen Strichen und hellen Tupfen
+let streakTex = null;
+function streakTexture() {
+  if (streakTex) return streakTex;
   const c = document.createElement('canvas');
-  c.width = 128;
-  c.height = 64;
+  c.width = 64;
+  c.height = 32;
   const ctx = c.getContext('2d');
-  // u=0.25 ist vorne (+Z), v=0 oben
-  ctx.fillStyle = '#f4f1e8';
-  ctx.fillRect(0, 0, 128, 64);
-  // Hinterkopf grau
-  const back = ctx.createLinearGradient(0, 0, 128, 0);
-  back.addColorStop(0, 'rgba(128,133,140,0)');
-  back.addColorStop(0.42, 'rgba(128,133,140,0)');
-  back.addColorStop(0.55, 'rgba(128,133,140,1)');
-  back.addColorStop(0.95, 'rgba(128,133,140,1)');
-  back.addColorStop(1, 'rgba(128,133,140,0)');
-  ctx.fillStyle = back;
-  ctx.fillRect(0, 0, 128, 64);
-  // schwarze Streifen über die Augen bis nach hinten
-  ctx.fillStyle = '#1d1e22';
-  for (const s of [-1, 1]) {
-    const cx = 32 + s * 9;
+  ctx.fillStyle = '#c29a6a';
+  ctx.fillRect(0, 0, 64, 32);
+  let seed = 7;
+  const r = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 70; i++) {
+    const x = r() * 64, y = r() * 32;
+    ctx.fillStyle = r() < 0.6 ? 'rgba(46,30,16,0.9)' : 'rgba(250,240,215,0.95)';
     ctx.beginPath();
-    ctx.moveTo(cx - 4.5, 44);
-    ctx.quadraticCurveTo(cx - 6, 20, cx + s * 14 - 5, 0);
-    ctx.lineTo(cx + s * 14 + 6, 0);
-    ctx.quadraticCurveTo(cx + 7, 20, cx + 5, 44);
-    ctx.closePath();
+    ctx.ellipse(x, y, 0.9 + r(), 2.2 + r() * 1.5, 0, 0, Math.PI * 2);
     ctx.fill();
   }
-  badgerTex = new THREE.CanvasTexture(c);
-  badgerTex.colorSpace = THREE.SRGBColorSpace;
-  return badgerTex;
+  streakTex = new THREE.CanvasTexture(c);
+  streakTex.colorSpace = THREE.SRGBColorSpace;
+  streakTex.wrapS = streakTex.wrapT = THREE.RepeatWrapping;
+  return streakTex;
 }
 
-// ---------------- Bruno der Dachs ----------------
+// ---------------- Bruno der Braunbär ----------------
 export function makeBruno() {
   const root = new THREE.Group();
-  const grey = mat(0x80858c), dark = mat(0x33363c), white = mat(0xf2efe6), black = mat(0x1d1e22);
-  const leather = mat(0x7a4a22), scarf = mat(0xd8342a), boots = mat(0x5a3418), pack = mat(0x3f7f3a);
+  const fur = mat(0x8b5a33), furDark = mat(0x6f4424), muzzle = mat(0xdcb487), belly = mat(0xc6935f);
+  const black = mat(0x1d1e22), dark = mat(0x2e1c10);
+  const pants = mat(0x3f6a3a), strap = mat(0x3a2614), trim = mat(0xe8d8a8);
+  const scarf = mat(0xd8342a), boots = mat(0x4a2c14);
+  const pack = mat(0xc8552a), packDark = mat(0x8e3a1c);
 
   const hips = pivot(root, 0, 0.72, 0);
   const body = pivot(hips, 0, 0, 0);
-  part(body, G.sphere(0.5, 14, 10), grey, 0, 0.32, 0, 0, 0, 0, [1, 1.08, 0.9]);
-  part(body, G.sphere(0.4, 12, 8), white, 0, 0.28, 0.2, 0, 0, 0, [0.85, 0.95, 0.6]);
-  // Lederhose mit Hosenträgern
-  part(body, G.cyl(0.5, 0.46, 0.34, 12), leather, 0, -0.08, 0);
+  // runder Bärenbauch
+  part(body, G.sphere(0.54, 14, 10), fur, 0, 0.3, 0, 0, 0, 0, [1, 1.08, 0.92]);
+  part(body, G.sphere(0.42, 12, 8), belly, 0, 0.24, 0.22, 0, 0, 0, [0.85, 0.95, 0.6]);
+  // grüne Kniebundhose mit Hosenträgern
+  part(body, G.cyl(0.53, 0.49, 0.36, 12), pants, 0, -0.1, 0);
   for (const s of [-1, 1]) {
-    part(body, G.box(0.08, 0.62, 0.05), leather, s * 0.2, 0.08, 0.38, -0.25, 0, s * 0.08);
-    part(body, G.box(0.08, 0.5, 0.05), leather, s * 0.2, 0.2, -0.4, 0.3, 0, s * 0.08);
+    part(body, G.box(0.08, 0.64, 0.05), strap, s * 0.21, 0.06, 0.4, -0.25, 0, s * 0.08);
+    part(body, G.box(0.08, 0.5, 0.05), strap, s * 0.21, 0.2, -0.42, 0.3, 0, s * 0.08);
   }
-  part(body, G.box(0.36, 0.12, 0.06), leather, 0, 0.3, 0.44, -0.3, 0, 0);
-  // Rucksack
-  part(body, G.box(0.56, 0.56, 0.28), pack, 0, 0.18, -0.52, 0.1, 0, 0);
-  part(body, G.box(0.58, 0.14, 0.3), mat(0x2f5f2a), 0, 0.66, -0.55, 0.1, 0, 0);
+  part(body, G.box(0.38, 0.1, 0.06), strap, 0, 0.3, 0.46, -0.3, 0, 0);
+  part(body, G.box(0.12, 0.06, 0.065), trim, 0, 0.32, 0.47, -0.3, 0, 0);
   // Halstuch
   part(body, G.torus(0.3, 0.1, 6, 12), scarf, 0, 0.72, 0.02, Math.PI / 2 + 0.2, 0, 0);
   part(body, G.cone(0.14, 0.3, 4), scarf, 0.12, 0.54, 0.3, 0.3, 0, Math.PI);
 
-  const head = pivot(body, 0, 0.98, 0.04);
-  // Kopf mit aufgemalter Dachs-Maske (so wie N64-Figuren ihre Gesichter bekamen)
-  part(head, G.sphere(0.42, 16, 12), mat(0xffffff, { map: badgerHeadTexture() }), 0, 0, 0, 0, 0, 0, [1, 0.95, 1.02]);
-  part(head, G.sphere(0.2, 10, 8), white, 0, -0.1, 0.36, 0, 0, 0, [0.95, 0.72, 1.1]);
-  part(head, G.sphere(0.085, 8, 6), black, 0, -0.04, 0.57);
-  part(head, G.torus(0.07, 0.018, 4, 8, Math.PI), dark, 0, -0.18, 0.47, 0, 0, Math.PI);
-  const eyeL = eyeOn(head, [0.42, 0.4, 0.43], -0.15, 0.1, 0.105);
-  const eyeR = eyeOn(head, [0.42, 0.4, 0.43], 0.15, 0.1, 0.105);
+  // Großer Rucksack mit offener Klappe – hier wohnt Kiki
+  part(body, G.box(0.66, 0.66, 0.4), pack, 0, -0.02, -0.6, 0.08, 0, 0);
+  part(body, G.box(0.7, 0.1, 0.44), packDark, 0, 0.6, -0.64, 0.08, 0, 0);
   for (const s of [-1, 1]) {
-    part(head, G.sphere(0.12, 8, 6), dark, s * 0.3, 0.32, -0.08, 0, 0, 0, [1, 1, 0.5]);
-    part(head, G.sphere(0.07, 6, 4), white, s * 0.31, 0.36, -0.03, 0, 0, 0, [1, 1, 0.5]);
+    part(body, G.box(0.14, 0.34, 0.2), packDark, s * 0.38, 0.05, -0.6, 0.08, 0, 0);
+    part(body, G.box(0.07, 0.5, 0.06), packDark, s * 0.22, 0.28, 0.33, -0.35, 0, s * 0.1);
   }
-  // Tirolerhut mit Feder
-  part(head, G.cyl(0.27, 0.34, 0.2, 10), mat(0x3b5b2e), 0, 0.3, -0.04, -0.15, 0, 0);
-  part(head, G.cyl(0.46, 0.46, 0.04, 12), mat(0x3b5b2e), 0, 0.3, -0.04, -0.15, 0, 0);
-  part(head, G.cyl(0.35, 0.35, 0.05, 10), mat(0xc0392b), 0, 0.33, -0.04, -0.15, 0, 0);
-  part(head, G.box(0.03, 0.45, 0.1), mat(0x2a3f8a), 0.24, 0.45, -0.12, -0.5, 0, -0.35);
+  part(body, G.box(0.2, 0.14, 0.03), mat(0xe8c040), 0, 0.2, -0.81, 0.08, 0, 0);
+
+  const head = pivot(body, 0, 0.98, 0.04);
+  part(head, G.sphere(0.43, 16, 12), fur, 0, 0, 0, 0, 0, 0, [1, 0.95, 1]);
+  // Schnauze, Nase, Maul
+  part(head, G.sphere(0.23, 12, 8), muzzle, 0, -0.1, 0.32, 0, 0, 0, [1, 0.78, 1]);
+  part(head, G.sphere(0.09, 8, 6), black, 0, -0.03, 0.54, 0, 0, 0, [1.25, 0.85, 0.9]);
+  part(head, G.torus(0.075, 0.018, 4, 8, Math.PI), dark, 0, -0.19, 0.47, 0, 0, Math.PI);
+  const eyeL = eyeOn(head, [0.43, 0.41, 0.43], -0.15, 0.1, 0.1);
+  const eyeR = eyeOn(head, [0.43, 0.41, 0.43], 0.15, 0.1, 0.1);
+  for (const s of [-1, 1]) part(head, G.box(0.13, 0.03, 0.03), dark, s * 0.15, 0.24, 0.38, -0.3, 0, -s * 0.15);
+  // runde Bärenohren
+  for (const s of [-1, 1]) {
+    part(head, G.sphere(0.14, 10, 8), fur, s * 0.31, 0.28, -0.04, 0, 0, 0, [1, 1, 0.55]);
+    part(head, G.sphere(0.08, 8, 6), muzzle, s * 0.31, 0.28, 0.02, 0, 0, 0, [1, 1, 0.4]);
+  }
+  // kleiner Tirolerhut mit Feder zwischen den Ohren
+  const hg = mat(0x3b5b2e);
+  part(head, G.cyl(0.19, 0.24, 0.18, 10), hg, 0, 0.35, -0.05, -0.18, 0, 0);
+  part(head, G.cyl(0.33, 0.33, 0.035, 12), hg, 0, 0.35, -0.05, -0.18, 0, 0);
+  part(head, G.cyl(0.25, 0.25, 0.045, 10), mat(0xc0392b), 0, 0.38, -0.05, -0.18, 0, 0);
+  part(head, G.box(0.03, 0.36, 0.08), mat(0x2a3f8a), 0.17, 0.48, -0.12, -0.5, 0, -0.35);
 
   const arms = [];
   for (const s of [-1, 1]) {
-    const a = pivot(body, s * 0.5, 0.56, 0);
-    part(a, cap(0.13, 0.32), dark, s * 0.02, -0.26, 0, 0, 0, s * 0.15);
-    part(a, G.sphere(0.16, 8, 6), dark, s * 0.06, -0.52, 0.02);
+    const a = pivot(body, s * 0.52, 0.56, 0);
+    part(a, cap(0.14, 0.32), fur, s * 0.02, -0.26, 0, 0, 0, s * 0.15);
+    part(a, G.sphere(0.17, 8, 6), furDark, s * 0.06, -0.52, 0.02);
     arms.push(a);
   }
   const legs = [];
   for (const s of [-1, 1]) {
-    const l = pivot(hips, s * 0.24, -0.1, 0);
-    part(l, cap(0.14, 0.28), dark, 0, -0.26, 0);
-    part(l, G.sphere(0.18, 8, 6), boots, 0, -0.52, 0.07, 0, 0, 0, [1, 0.6, 1.45]);
+    const l = pivot(hips, s * 0.25, -0.1, 0);
+    part(l, cap(0.15, 0.26), fur, 0, -0.26, 0);
+    part(l, G.sphere(0.19, 8, 6), boots, 0, -0.52, 0.07, 0, 0, 0, [1, 0.6, 1.45]);
     legs.push(l);
   }
 
+  // Kiki sitzt im Rucksack (hängt am Oberkörper und macht dessen Bewegungen mit)
   const kiki = makeKiki();
-  root.add(kiki);
-  kiki.scale.setScalar(0.95);
+  body.add(kiki);
+  kiki.position.set(0.05, 0.74, -0.62);
+  kiki.scale.setScalar(1.3);
 
   root.userData.rig = {
     hips, body, head, armL: arms[0], armR: arms[1], legL: legs[0], legR: legs[1],
@@ -123,32 +128,58 @@ export function makeBruno() {
   return root;
 }
 
-// ---------------- Kiki die Elster ----------------
+// ---------------- Kiki der Rennkuckuck ----------------
 export function makeKiki() {
   const root = new THREE.Group();
-  const black = mat(0x1a1d2c), white = mat(0xf4f4f4), blue = mat(0x2d3f9a), beak = mat(0x3a3a3a);
+  const feathers = mat(0xffffff, { map: streakTexture() });
+  const cream = mat(0xf1e4c4), crest = mat(0x3e2a18), beak = mat(0x2c2a28), bronze = mat(0x6a5a3a);
   const body = pivot(root, 0, 0, 0);
-  part(body, G.sphere(0.18, 10, 8), black, 0, 0, 0, 0, 0, 0, [1, 1, 1.3]);
-  part(body, G.sphere(0.14, 8, 6), white, 0, -0.03, 0.08, 0, 0, 0, [1, 0.9, 1.1]);
-  const head = pivot(body, 0, 0.17, 0.12);
-  part(head, G.sphere(0.13, 10, 8), black);
-  part(head, G.cone(0.045, 0.2, 6), beak, 0, -0.02, 0.18, Math.PI / 2, 0, 0);
-  eyeOn(head, [0.13, 0.13, 0.13], -0.06, 0.03, 0.05);
-  eyeOn(head, [0.13, 0.13, 0.13], 0.06, 0.03, 0.05);
-  // freche Haartolle
-  part(head, G.cone(0.04, 0.14, 4), black, 0, 0.14, -0.02, -0.4, 0, 0);
-  part(head, G.cone(0.035, 0.12, 4), black, 0.03, 0.13, -0.05, -0.8, 0, 0.3);
+  part(body, G.sphere(0.17, 12, 8), feathers, 0, 0, 0, 0, 0, 0, [0.95, 1, 1.35]);
+  part(body, G.sphere(0.13, 10, 8), cream, 0, -0.04, 0.09, 0, 0, 0, [0.9, 0.9, 1.1]);
+  // langer Hals mit Kopf
+  const neck = pivot(body, 0, 0.08, 0.13);
+  part(neck, G.cyl(0.065, 0.085, 0.22, 8), feathers, 0, 0, 0, 0.25, 0, 0);
+  const head = pivot(neck, 0, 0.24, 0.06);
+  part(head, G.sphere(0.115, 12, 10), feathers, 0, 0, 0, 0, 0, 0, [0.9, 1, 1.15]);
+  part(head, G.sphere(0.07, 8, 6), cream, 0, -0.06, 0.05, 0, 0, 0, [0.9, 0.6, 1]);
+  // langer, gerader Schnabel
+  part(head, G.cone(0.034, 0.32, 6), beak, 0, -0.01, 0.12, Math.PI / 2 - 0.08, 0, 0);
+  eyeOn(head, [0.104, 0.115, 0.132], -0.052, 0.025, 0.046);
+  eyeOn(head, [0.104, 0.115, 0.132], 0.052, 0.025, 0.046);
+  // blau-oranger Fleck hinter dem Auge
+  for (const s of [-1, 1]) {
+    part(head, G.sphere(0.03, 6, 4), mat(0x3a7ad8), s * 0.095, 0.005, -0.02, 0, 0, 0, [0.35, 0.9, 1.2]);
+    part(head, G.sphere(0.025, 6, 4), mat(0xe8582a), s * 0.092, -0.01, -0.06, 0, 0, 0, [0.35, 0.9, 1]);
+  }
+  // struppige Haube
+  [[0, -0.45, 0.13], [0.03, -0.8, 0.12], [-0.03, -0.8, 0.12], [0, -1.15, 0.1], [0.02, -1.45, 0.08]].forEach(([x, rx, len]) =>
+    part(head, G.cone(0.028, len * 1.3, 4), crest, x, 0.08, -0.03, rx, 0, x * 6));
+  // Flügel zeigen seitlich nach außen und werden in Ruhe nach hinten angelegt
   const wings = [];
   for (const s of [-1, 1]) {
-    const w = pivot(body, s * 0.15, 0.05, 0);
-    part(w, G.sphere(0.16, 8, 6), blue, s * 0.12, 0, -0.02, 0, 0, 0, [1.3, 0.25, 0.9]);
-    part(w, G.sphere(0.08, 6, 4), white, s * 0.1, 0.02, 0.03, 0, 0, 0, [1.2, 0.3, 0.8]);
+    const w = pivot(body, s * 0.13, 0.05, 0);
+    part(w, G.sphere(0.16, 8, 6), feathers, s * 0.14, 0, 0, 0, 0, 0, [1.15, 0.28, 0.5]);
+    for (let k = 0; k < 3; k++) part(w, G.sphere(0.03, 5, 4), cream, s * (0.08 + k * 0.07), 0.035, 0.02 - k * 0.01, 0, 0, 0, [1, 0.4, 1]);
+    w.rotation.y = s * 1.35;
     wings.push(w);
   }
-  const tail = pivot(body, 0, 0.02, -0.2);
-  part(tail, G.box(0.1, 0.03, 0.42), blue, 0, 0, -0.18, 0.35, 0, 0);
-  for (const s of [-1, 1]) part(body, G.cyl(0.018, 0.018, 0.14, 4), beak, s * 0.06, -0.26, 0.02);
-  root.userData.rig = { body, head, wingL: wings[0], wingR: wings[1], tail };
+  // langer, sich verbreiternder Schwanz aus drei Federn mit hellen Spitzen
+  const tail = pivot(body, 0, 0.05, -0.18);
+  for (const [s, len] of [[0, 0.55], [-1, 0.46], [1, 0.46]]) {
+    part(tail, G.cyl(0.07, 0.03, len, 6), bronze, s * 0.06, 0, 0, -Math.PI / 2, s * 0.18, 0, [1, 1, 0.35]);
+    part(tail, G.sphere(0.07, 6, 4), cream, s * 0.06 - s * len * 0.18, 0, -len, 0, s * 0.18, 0, [1, 0.35, 0.5]);
+  }
+  tail.rotation.x = 0.6;
+  // lange Beine (stecken im Rucksack, beim Flattern sieht man sie)
+  const legs = [];
+  for (const s of [-1, 1]) {
+    const l = pivot(body, s * 0.06, -0.12, 0.02);
+    part(l, G.cyl(0.018, 0.022, 0.3, 5), mat(0x7a8a9a), 0, -0.3, 0);
+    part(l, G.box(0.03, 0.02, 0.14), mat(0x7a8a9a), 0, -0.31, 0.03, 0, 0.5, 0);
+    part(l, G.box(0.03, 0.02, 0.14), mat(0x7a8a9a), 0, -0.31, 0.03, 0, -0.5, 0);
+    legs.push(l);
+  }
+  root.userData.rig = { body, neck, head, wingL: wings[0], wingR: wings[1], tail, legs };
   return root;
 }
 

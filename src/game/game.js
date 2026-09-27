@@ -129,8 +129,17 @@ export class Game {
     return new Promise((res) => this.tweens.push({ t: 0, dur, fn, res }));
   }
 
+  // Knopfnamen (A/B/Z) in Texten passend zum Eingabegerät anzeigen
+  keyText(text) {
+    const d = this.input.device;
+    const names = d === 'keyboard' ? { A: 'Leertaste', B: 'J', Z: 'Z' }
+      : d === 'gamepad' ? { A: 'A', B: 'B', Z: 'Schultertaste' } : null;
+    if (!names) return text;
+    return text.replace(/(^|[^\wÄÖÜäöüß'])([ABZ])(?![\wÄÖÜäöüß'])/g, (m, pre, k) => pre + names[k]);
+  }
+
   toast(text, sec) {
-    this.hud.toast(text, sec);
+    this.hud.toast(this.keyText(text), sec);
   }
 
   fade(on) {

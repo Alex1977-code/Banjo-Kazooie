@@ -1,6 +1,6 @@
 # Bruno & Kiki – Das Geheimnis des Sonnensteins
 
-Ein 3D-Jump'n'Run im Stil der großen N64-Plattformer: ein Dachs und eine freche Elster,
+Ein 3D-Jump'n'Run im Stil der großen N64-Plattformer: ein Braunbär und ein frecher Rennkuckuck im Rucksack,
 eine Welt voller Sammelkram, brabbelnde Figuren, ein niesender Zauberer – und das alles
 direkt im Browser. Läuft auf dem **Handy mit Touch-Steuerung** und auf dem **Fernseher mit Controller**.
 
@@ -14,12 +14,12 @@ direkt im Browser. Läuft auf dem **Handy mit Touch-Steuerung** und auf dem **Fe
 
 Der griesgrämige Zauberer **Nebelbart** hasst Sonnenschein. Eines Morgens zerschmettert er den
 **Sonnenstein** auf dem Sonnenhügel und verstreut die Splitter in alle Winde – das Wurzeltal
-wird grau und trüb. **Bruno** der Dachs und seine beste Freundin **Kiki** die Elster ziehen los,
+wird grau und trüb. **Bruno** der Braunbär und seine beste Freundin **Kiki**, ein Rennkuckuck, der in Brunos Rucksack wohnt, ziehen los,
 um die **Sonnensplitter** zurückzuholen und Nebelbart in seinem Turm das Handwerk zu legen.
 
 | Welt | Was dich erwartet |
 |---|---|
-| **Wurzelhügel** (Hub) | Brunos Dachsbau, Oma Tilda erklärt alles, Lernsteine für Hochsprung & Stampfer, Felsturm und rissige Steinplatte. Tore zu allen Welten. |
+| **Wurzelhügel** (Hub) | Brunos Höhle, Oma Tilda erklärt alles, Lernsteine für Hochsprung & Stampfer, Felsturm und rissige Steinplatte. Tore zu allen Welten. |
 | **Pilzwald** (1 Splitter) | Opa Eiche mit Wendel-Baumpilzen bis zur Krone, Hüpfpilze zur schwebenden Insel, Giftsumpf mit Seerosen, Käferlichtung, verlorenes Igelkind Stupsi. |
 | **Muschelbucht** (4 Splitter) | Leuchtturm mit Wendeltreppe, Tauchgang zum Schiffswrack, Schatzsuche mit Piraten-Pelikan Pedro, Boss Käpt'n Knack, schwimmende Fässer. |
 | **Nebelturm** (10 Splitter) | Aufstieg über die Außentreppe und Endkampf gegen Nebelbart in drei Phasen. |
@@ -57,7 +57,7 @@ Im Spiel unter **„Fernseher & Controller“** stehen beide Wege noch einmal er
 | Kamera | rechte Hälfte wischen, 📷 zentriert | rechter Stick, Y zentriert | Q / E, R zentriert |
 | Springen (A) | grüner Knopf | A / Kreuz | Leertaste |
 | Angriff / Reden (B) | blauer Knopf | B / X | J |
-| Ducken (Z) | lila Knopf | Schultertasten / Trigger | Shift / K |
+| Ducken / Stampfen (Z) | lila Knopf | Schultertasten / Trigger | Z / C / Shift |
 | Pause | ⏸ oben rechts | Start | Esc |
 
 **Bewegungen:** Sprung, Flattersprung (in der Luft A halten), Rolle (B), Schnabelhieb (B in der

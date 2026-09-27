@@ -4,7 +4,7 @@ import { makeBruno, makeKiki, makeTilda, makeNebelbart, makeHedgehog, makePelica
 
 const CONF = {
   bruno: { make: makeBruno, y: 1.75, dist: 2.2, bg: 0x6aa7e8 },
-  kiki: { make: makeKiki, y: 0.08, dist: 0.95, bg: 0xffb3d0 },
+  kiki: { make: makeKiki, y: 0.3, dist: 1.05, bg: 0xffd28a },
   tilda: { make: makeTilda, y: 1.9, dist: 2.2, bg: 0xa8e08a },
   nebelbart: { make: makeNebelbart, y: 1.85, dist: 2.8, bg: 0x6a4f9a },
   igel: { make: () => makeHedgehog(1, true), y: 0.75, dist: 2.1, bg: 0xf0c890 },

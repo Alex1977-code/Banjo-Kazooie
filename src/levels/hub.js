@@ -78,7 +78,7 @@ export default {
     L.sky({ top: col.top, bottom: col.bottom, mountains: 0x8aa6bf, seed: 11 });
     L.water({ cx: -44, cz: 8, r: 22, y: -0.8, color: 0x4aa8e8 });
 
-    // ---------- Brunos Dachsbau ----------
+    // ---------- Brunos Höhle im Hügel ----------
     const fy = L.gy(0, 23);
     L.box({ x: 0, z: 23.4, y: fy - 1, w: 8, h: 5.4, d: 1.6, color: 0xa39a8c, tex: 'stone', uv: 0.35 });
     L.add(G.cyl(1.9, 1.9, 0.35, 16).rotateX(Math.PI / 2), M(0, fy + 1.7, 22.5), 0x8a5a2e, 'wood', 0.6);
@@ -393,7 +393,7 @@ async function intro(L, g) {
       { who: 'bruno', text: 'Hmpf ... Was ist denn, Kiki? Die Sonne ist ja noch nicht mal ... Moment. Warum ist alles so grau?' },
       { who: 'kiki', text: 'Na, weil dieser miese Nebelbart gerade den Sonnenstein zerschmettert hat! Die Splitter sind überall verstreut!' },
       { who: 'bruno', text: 'Oh nein! Ohne den Sonnenstein wird es im Wurzeltal nie wieder warm und bunt!' },
-      { who: 'kiki', text: 'Genau! Also los, wir holen uns die Splitter zurück und zupfen dem alten Nebelsack den Bart!' },
+      { who: 'kiki', text: 'Genau! Also los, Rucksack auf und ich hüpf rein! Wir holen uns die Splitter zurück und zupfen dem alten Nebelsack den Bart!' },
     ]);
     await g.camTo([8, p.pos.y + 3, 22], [5, p.pos.y + 1.5, 12], 1);
     await g.say([{ who: 'tilda', text: 'Nicht so hastig, ihr zwei Wirbelwinde! Kommt erst mal zu mir. Ich bringe euch bei, was ihr wissen müsst.' }]);

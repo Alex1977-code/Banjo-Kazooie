@@ -52,7 +52,7 @@ export class Dialog {
     const l = this.lines[this.idx];
     this.who = l.who || 'default';
     this.nameEl.textContent = l.name || NAMES[this.who] || '';
-    this.full = l.text;
+    this.full = this.game.keyText(l.text);
     this.shown = 0;
     this.textEl.textContent = '';
     this.el.classList.remove('done');

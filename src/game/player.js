@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { makeBruno } from './models.js';
 import { mergeStatic } from '../engine/geo.js';
 import { B } from '../engine/input.js';
-import { clamp, damp, dampAngle, lerp } from '../engine/util.js';
+import { clamp, damp, dampAngle } from '../engine/util.js';
 
 const GRAV = 34;
 const RUN = 9;
@@ -11,8 +11,10 @@ const STEP = 0.5;
 const JUMP_V = 12.5;
 const HIGH_V = 18;
 
-const SHOULDER = new THREE.Vector3(0.44, 1.5, -0.1);
-const ABOVE = new THREE.Vector3(0, 2.45, 0.05);
+// Kikis Positionen relativ zu Brunos Oberkörper: im Rucksack, herausgereckt, nach vorn gebeugt
+const IN_BAG = new THREE.Vector3(0.05, 0.74, -0.62);
+const OUT_BAG = new THREE.Vector3(0, 1.5, -0.52);
+const PECK_POS = new THREE.Vector3(0, 1.08, -0.46);
 
 export class Player {
   constructor(game) {
@@ -679,25 +681,29 @@ export class Player {
     if (this.blinkT < 0) this.blinkT = 2 + Math.random() * 3;
     for (const e of r.eyes) e.scale.y = blink ? 0.15 : 1;
 
-    // Kiki: auf der Schulter, beim Flattern über dem Kopf, beim Picken vorne
+    // Kiki: sitzt im Rucksack, reckt sich beim Flattern heraus, beugt sich zum Picken nach vorn
     this.kikiUp = damp(this.kikiUp, kikiTarget, 14, dt);
     const k = r.kiki, kr = k.userData.rig;
-    if (this.kikiUp >= 0) {
-      k.position.lerpVectors(SHOULDER, ABOVE, this.kikiUp);
-    } else {
-      k.position.set(lerp(SHOULDER.x, 0, -this.kikiUp), lerp(SHOULDER.y, 1.3, -this.kikiUp), lerp(SHOULDER.z, 0.75, -this.kikiUp));
-    }
-    k.position.y += (r.hips.position.y - 0.72);
-    k.rotation.x = s === 'peck' ? 0.5 + Math.sin(t * 50) * 0.35 : 0;
-    k.rotation.y = s === 'idle' ? Math.sin(t * 0.8) * 0.5 : 0;
-    if (pitchAll) {
-      // Beim Rollen/Stampfen mitdrehen
-      k.visible = s !== 'roll';
-    } else k.visible = true;
-    const flap = kikiFlap ? Math.sin(t * 42) * 1.1 * kikiFlap : Math.sin(t * 3) * 0.05 - 0.1;
-    kr.wingL.rotation.z = flap;
-    kr.wingR.rotation.z = -flap;
-    kr.head.rotation.y = s === 'idle' ? Math.sin(t * 1.3) * 0.6 : 0;
+    if (this.kikiUp >= 0) k.position.lerpVectors(IN_BAG, OUT_BAG, this.kikiUp);
+    else k.position.lerpVectors(IN_BAG, PECK_POS, -this.kikiUp);
+    k.rotation.x = Math.max(0, -this.kikiUp) * 0.75;
+    k.rotation.y = s === 'idle' ? Math.sin(t * 0.8) * 0.35 : 0;
+    // Hals: beim Picken hackt er, beim Laufen wippt er
+    kr.neck.rotation.x = s === 'peck'
+      ? 0.5 + Math.sin(t * 50) * 0.45
+      : s === 'run' ? Math.sin(this.walkPhase * 2) * 0.15 : Math.sin(t * 2.4) * 0.05;
+    kr.head.rotation.y = s === 'idle' ? Math.sin(t * 1.3) * 0.7 : 0;
+    const flap = kikiFlap ? Math.sin(t * 42) * 1.0 * kikiFlap : Math.sin(t * 3) * 0.05;
+    // beim Flattern breitet Kiki die Flügel seitlich aus, sonst liegen sie am Körper an
+    const spread = Math.min(1, Math.max(0, this.kikiUp) * 1.2 + (kikiFlap ? 0.3 : 0));
+    const fold = 1.35 - spread * 1.15;
+    kr.wingL.rotation.set(0, -fold, -flap);
+    kr.wingR.rotation.set(0, fold, flap);
+    const ws = 1 + spread * 0.5;
+    kr.wingL.scale.setScalar(ws);
+    kr.wingR.scale.setScalar(ws);
+    kr.tail.rotation.x = (s === 'peck' ? 0 : 0.6) + Math.sin(t * 3) * 0.05 + (kikiFlap ? Math.sin(t * 21) * 0.15 : 0);
+    for (const [i, l] of kr.legs.entries()) l.rotation.x = kikiFlap ? Math.sin(t * 20 + i * Math.PI) * 0.5 : 0;
 
     // Unverwundbarkeit: blinken
     m.visible = this.invuln > 0 && s !== 'dead' ? Math.floor(t * 16) % 2 === 0 : true;

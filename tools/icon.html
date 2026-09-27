@@ -52,15 +52,19 @@
     const rig = bruno.userData.rig;
     rig.armL.rotation.z = -2.6;
     rig.armR.rotation.z = 0.5;
-    rig.kiki.position.set(0.5, 1.55, 0.05);
-    rig.kiki.rotation.y = -0.5;
-    rig.kiki.userData.rig.wingL.rotation.z = 0.8;
-    rig.kiki.userData.rig.wingR.rotation.z = -0.8;
+    // Kiki reckt sich aus dem Rucksack und breitet die Flügel aus
+    const kr = rig.kiki.userData.rig;
+    rig.kiki.position.set(0.28, 1.28, -0.5);
+    rig.kiki.rotation.y = -0.4;
+    kr.wingL.rotation.set(0, -0.2, 0.5);
+    kr.wingR.rotation.set(0, 0.2, -0.5);
+    kr.wingL.scale.setScalar(1.4);
+    kr.wingR.scale.setScalar(1.4);
     bruno.rotation.y = -0.35;
     scene.add(bruno);
     const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
-    cam.position.set(0.6, 1.5, 6.2 / zoom);
-    cam.lookAt(0, 1.05, 0);
+    cam.position.set(0.6, 1.6, 6.4 / zoom);
+    cam.lookAt(0, 1.15, 0);
     r.render(scene, cam);
     window.done = true;
   </script>
