@@ -44,7 +44,10 @@ Im Spiel unter **„Fernseher & Controller“** stehen beide Wege noch einmal er
   oder eines Laptops am HDMI-Anschluss öffnen → „Handy als Controller verbinden“ → QR-Code mit dem
   Handy scannen. Die Eingaben laufen per WebRTC direkt übers WLAN (für den Verbindungsaufbau wird
   kurz der öffentliche PeerJS-Server genutzt). Mit `?tv` in der Adresse (`…/index.html?tv`) wird
-  die Anzeige für große Bildschirme vergrößert.
+  die Anzeige für große Bildschirme vergrößert. Wer keinen öffentlichen Server nutzen möchte, kann
+  einen eigenen [PeerServer](https://github.com/peers/peerjs-server) starten
+  (`npx peer --port 9000`) und ihn mit `?peer=<host>:9000` angeben – der QR-Code übernimmt die
+  Einstellung automatisch für das Handy.
 
 ## Steuerung
 

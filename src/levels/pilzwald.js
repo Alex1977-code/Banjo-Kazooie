@@ -227,7 +227,7 @@ export default {
     L.apple(OAK.x + 3, OAK.z + 4, crown);
 
     // ---------- Beeren ----------
-    L.berryLine(0, 58, 2, 34, 6);
+    L.berryLine(0, 52, 2, 32, 6);
     L.berryLine(6, 28, 26, 12, 5);
     L.berryLine(4, 0, 30, -34, 6);
     L.berryRing(OAK.x, OAK.z, 9, 6);

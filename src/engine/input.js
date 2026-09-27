@@ -99,8 +99,8 @@ export class Input {
     if (this.keys.has('KeyS') || this.keys.has('ArrowDown')) my -= 1;
     if (this.keys.has('KeyQ')) cx -= 1;
     if (this.keys.has('KeyE')) cx += 1;
-    if (this.keys.has('PageUp')) cy += 1;
-    if (this.keys.has('PageDown')) cy -= 1;
+    if (this.keys.has('PageUp')) cy -= 1;
+    if (this.keys.has('PageDown')) cy += 1;
     const km = Math.hypot(mx, my);
     if (km > 1) { mx /= km; my /= km; }
 

@@ -59,13 +59,12 @@ export class Level {
     else if (r) geo = new THREE.CircleGeometry(r, 24).translate(cx, -cz, 0);
     else geo = new THREE.PlaneGeometry(size, size, 1, 1);
     geo.rotateX(-Math.PI / 2);
+    // eigene Kopie, weil jede Wasserfläche eigenständig animiert wird
     const tex = this.game.tex.water.clone();
     tex.needsUpdate = true;
-    tex.repeat.set((x0 != null ? x1 - x0 : r ? r * 2 : size) / 8, (z0 != null ? z1 - z0 : r ? r * 2 : size) / 8);
     const uvScale = 1 / 8;
     const uv = geo.attributes.uv, pos = geo.attributes.position;
     for (let i = 0; i < uv.count; i++) uv.setXY(i, pos.getX(i) * uvScale, pos.getZ(i) * uvScale);
-    tex.repeat.set(1, 1);
     const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({
       color, map: tex, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide,
     }));
@@ -415,11 +414,14 @@ export class Level {
 
   dispose() {
     this.game.renderer.scene.remove(this.root);
+    const sharedTex = new Set(Object.values(this.game.tex));
     this.root.traverse((o) => {
       if (o.geometry) o.geometry.dispose();
-      if (o.material && !o.material._shared) {
-        const ms = Array.isArray(o.material) ? o.material : [o.material];
-        for (const m of ms) if (m.vertexColors || m.isShaderMaterial) m.dispose();
+      if (!o.material) return;
+      for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+        if (m.userData.shared) continue;
+        if (m.map && !sharedTex.has(m.map)) m.map.dispose();
+        m.dispose();
       }
     });
   }

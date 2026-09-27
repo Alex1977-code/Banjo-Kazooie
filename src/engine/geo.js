@@ -212,6 +212,7 @@ export function mat(color, opts = {}) {
       m.opacity = opacity ?? 1;
     }
     if (side) m.side = side;
+    m.userData.shared = true;
     matCache.set(key, m);
   }
   return m;

@@ -108,9 +108,9 @@ export class Menus {
     const el = h('div', { class: 'opt' },
       h('label', {}, label),
       h('div', { class: 'val' },
-        h('button', { onclick: () => step(-1), 'aria-label': 'weniger' }, '‹'),
+        h('button', { onclick: () => step(-1), 'aria-label': 'weniger' }, '<'),
         valEl,
-        h('button', { onclick: () => step(1), 'aria-label': 'mehr' }, '›')));
+        h('button', { onclick: () => step(1), 'aria-label': 'mehr' }, '>')));
     upd();
     return { el, left: () => step(-1), right: () => step(1), act: () => step(1) };
   }

@@ -204,7 +204,13 @@ export default {
     L.add(G.box(1.2, 2, 0.1), M(hx + Math.sin(0.6) * 2.05, hy - 0.2, hz + Math.cos(0.6) * 2.05, 0.6), 0x4a2e14, 'plain');
 
     // ---------- Fässer zur Felsinsel ----------
-    const barrels = [[33, 20], [36.5, 22], [40, 23.5], [43.5, 24.5]];
+    // Fässer vom Ufer bis zur Felsinsel – erst dort, wo wirklich Wasser ist
+    const dirX = ROCK.x / Math.hypot(ROCK.x, ROCK.z + 4), dirZ = (ROCK.z + 4) / Math.hypot(ROCK.x, ROCK.z + 4);
+    const rockD = Math.hypot(ROCK.x, ROCK.z + 4);
+    let d0 = 34;
+    while (L.gy(dirX * d0, -4 + dirZ * d0) > -0.6 && d0 < rockD - 8) d0 += 0.5;
+    const barrels = [];
+    for (let d = d0 + 1.3; d < rockD - 4.2; d += 3.3) barrels.push([dirX * d, -4 + dirZ * d]);
     barrels.forEach(([x, z], i) => {
       const mesh = new THREE.Group();
       part(mesh, G.cyl(1.05, 1.05, 1.4, 10), mat(0x9a6a3a, { map: L.game.tex.wood }), 0, -1.4, 0);
@@ -215,7 +221,7 @@ export default {
     L.tree(ROCK.x + 1, ROCK.z + 1, { kind: 'palm', s: 0.8, y: 2.4 });
     L.shard('fass', ROCK.x - 0.5, 2.6 + 1.3, ROCK.z - 1);
     L.firefly('f2', ROCK.x + 1.5, 2.6 + 1.6, ROCK.z - 2);
-    L.berryLine(33, 20, 43.5, 24.5, 4, 0, 2.2);
+    for (const [x, z] of barrels) L.berry(x, 2.2, z);
 
     // ---------- Gegner & Äpfel ----------
     L.crab(14, 14, { wander: 6 });
