@@ -54,7 +54,7 @@ export class Game {
     this.last = performance.now();
     this.loop = this.loop.bind(this);
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden && this.mode === 'play' && !this.cinematic) this.menus.openPause();
+      if (document.hidden && this.mode === 'play' && !this.cinematic && !this.transitioning) this.menus.openPause();
     });
     $('#skip-hint').addEventListener('pointerdown', () => { if (this.cutsceneDepth > 0) this.skipping = true; });
   }
@@ -138,19 +138,33 @@ export class Game {
     return new Promise((r) => setTimeout(r, 480));
   }
 
+  // Aktuelles Level samt laufender Szenen, Timer und Zustände abbauen
+  teardownLevel() {
+    this.levelToken = (this.levelToken || 0) + 1;
+    this.dialog.flush();
+    this.cutsceneDepth = 0;
+    this.skipping = false;
+    $('#letterbox').classList.remove('on');
+    $('#skip-hint').hidden = true;
+    if (this.level) this.level.dispose();
+    this.level = null;
+    this.particles.clear();
+    this.timers.length = 0;
+    this.tweens.length = 0;
+    this.playerShadow = null;
+    this.dying = false;
+    this.falling = false;
+    this.hud.setBoss(null);
+  }
+
   // ---------- Level laden ----------
   async enterLevel(id, spawnName = 'start', { fromTitle = false } = {}) {
     if (this.transitioning) return;
     this.transitioning = true;
+    this.mode = 'loading';
+    this.updateTouchVisibility();
     await this.fade(true);
-    this.dialog.flush();
-    this.cutsceneDepth = 0;
-    $('#letterbox').classList.remove('on');
-    if (this.level) this.level.dispose();
-    this.particles.clear();
-    this.timers.length = 0;
-    this.tweens.length = 0;
-    if (this.playerShadow) this.playerShadow.remove();
+    this.teardownLevel();
     const def = (await LEVELS[id]()).default;
     const L = new Level(this, def);
     this.level = L;
@@ -277,7 +291,9 @@ export class Game {
     this.dying = true;
     this.audio.duckMusic(3);
     this.hud.banner('Autsch!', 'Nochmal versuchen ...', 2);
+    const token = this.levelToken;
     setTimeout(async () => {
+      if (token !== this.levelToken || !this.level) return;
       await this.fade(true);
       const L = this.level;
       const sp = L.spawns[this.currentSpawn] || L.spawns.start;
@@ -431,6 +447,7 @@ export class Game {
 
   // Hub im Hintergrund des Titelbildschirms laden
   async loadTitleBackdrop() {
+    this.teardownLevel();
     const def = (await LEVELS.hub()).default;
     const L = new Level(this, def);
     this.level = L;

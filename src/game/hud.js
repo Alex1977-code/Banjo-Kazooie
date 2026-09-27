@@ -89,10 +89,11 @@ export class Hud {
       this.promptLabel = null;
       return;
     }
-    if (this.promptLabel !== label) {
+    if (this.promptLabel !== label || this.promptKey !== key) {
       this.promptEl.innerHTML = `<b>${key}</b><span></span>`;
       this.promptEl.querySelector('span').textContent = label;
       this.promptLabel = label;
+      this.promptKey = key;
     }
     this.promptEl.classList.add('show');
   }

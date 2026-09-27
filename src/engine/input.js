@@ -67,13 +67,20 @@ export class Input {
     });
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
     window.addEventListener('blur', () => this.keys.clear());
+    // Tippt jemand auf den Bildschirm, gilt wieder Touch (z.B. nach Trennen eines Controllers)
+    window.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') this.setDevice('touch'); }, { capture: true, passive: true });
     window.addEventListener('gamepadconnected', () => {
       this.gamepadConnected = true;
       this.setDevice('gamepad');
     });
     window.addEventListener('gamepaddisconnected', () => {
       this.gamepadConnected = [...(navigator.getGamepads?.() || [])].some(Boolean);
+      if (!this.gamepadConnected && this.device === 'gamepad') this.fallbackDevice();
     });
+  }
+
+  fallbackDevice() {
+    this.setDevice(matchMedia('(pointer: coarse)').matches ? 'touch' : 'keyboard');
   }
 
   setDevice(d) {
@@ -136,6 +143,10 @@ export class Input {
       if (Math.abs(rx) > Math.abs(cx)) cx = rx;
       if (Math.abs(ry) > Math.abs(cy)) cy = ry;
     }
+
+    // Handy-Controller: kommt länger nichts an (Handy gesperrt, WLAN weg), loslassen
+    const rp = this.remotePad;
+    if (rp.lastActive && performance.now() - rp.lastActive > 800 && (rp.held || rp.mx || rp.my)) rp.reset();
 
     // Touch & Handy-Controller
     for (const p of [this.touchPad, this.remotePad]) {

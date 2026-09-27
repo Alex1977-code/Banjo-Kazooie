@@ -757,6 +757,7 @@ export class Platform extends Entity {
     this.col = shape === 'cyl'
       ? level.world.addCyl({ x: p0.x, z: p0.z, y: p0.y - h, r, h })
       : level.world.addBox({ x: p0.x, z: p0.z, y: p0.y - h, w, h, d, rot: p0.rot ?? 0 });
+    this.col.moving = true;
     this.h = h;
     this.time = 0;
   }

@@ -68,6 +68,7 @@ export class Player {
     this.swimming = this.diving = false;
     this.air = 1;
     this.invuln = 0;
+    this.bufferJump = 0;
     this.lastSafe.set(x, y, z);
     this.model.visible = true;
     this.model.rotation.set(0, facing, 0);
@@ -141,6 +142,7 @@ export class Player {
     this.coyote = Math.max(0, this.coyote - dt);
 
     const ctl = this.control && !game.cinematic && this.state !== 'dead' && this.state !== 'dance';
+    this.bufferJump = ctl ? Math.max(0, (this.bufferJump || 0) - dt) : 0;
     const held = (b) => ctl && input.isHeld(b);
     const pressed = (b) => ctl && input.pressed(b);
 
@@ -190,6 +192,8 @@ export class Player {
     // Wasser betreten?
     if (!this.diving && this.pos.y < waterY - 1.0 && this.state !== 'hurt') {
       if (!this.swimming) {
+        this.canFlutter = this.canPeck = true;
+        this.bufferJump = 0;
         game.audio.play('splash');
         game.particles.emit('splash', this.pos.x, waterY, this.pos.z, 14);
         this.setState('swim');
@@ -256,7 +260,7 @@ export class Player {
     const hz = game.level.hazardAt?.(this.pos.x, this.pos.y, this.pos.z);
 
     // Sicherer Punkt zum Wiederbeleben
-    if (this.onGround && !hz && !this.swimming && (!this.groundCol || !this.groundCol.dx) && this.state !== 'hurt') {
+    if (this.onGround && !hz && !this.swimming && !this.groundCol?.moving && this.state !== 'hurt') {
       this.safeT += dt;
       if (this.safeT > 0.4 && world.terrainHeight(this.pos.x, this.pos.z) > waterY - 0.8 && !this.groundCol?.hazard) {
         this.lastSafe.copy(this.pos);
@@ -425,7 +429,6 @@ export class Player {
       return;
     }
     if (s === 'fall' && pressed(B.JUMP)) this.bufferJump = 0.12;
-    this.bufferJump = Math.max(0, (this.bufferJump || 0) - dt);
 
     if ((s === 'jump' || s === 'longjump') && !held(B.JUMP) && this.vel.y > 3 && !this.jumpCut) {
       this.vel.y *= 0.5;

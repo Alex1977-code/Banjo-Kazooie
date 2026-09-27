@@ -386,10 +386,12 @@ class Boss extends Entity {
     for (const e of L.entities) if (e instanceof Orb || e instanceof Shockwave || e instanceof FogImp) e.remove();
     g.hud.setBoss?.(null);
     g.audio.stopMusic();
+    // beide Flags sofort, damit ein Abbruch in der Szene das Ende nicht verhindert
     g.save.data.flags['turm:won'] = true;
+    g.save.data.flags['hub:restored'] = true;
     g.save.write();
     await g.cutscene(async () => {
-      const b = this.pos;
+      const b = this.pos.clone();
       await g.camTo([b.x + 6, 4, b.z + 6], [b.x, 2, b.z], 1);
       await g.say([
         { who: 'nebelbart', text: 'Neiiin! Mein wunderschöner, grauer, gemütlicher Nebel ...' },
@@ -410,8 +412,6 @@ class Boss extends Entity {
         { who: 'bruno', text: 'Seht mal, der Nebel lichtet sich! Schnell, zurück zum Sonnenhügel!' },
       ]);
     });
-    g.save.data.flags['hub:restored'] = true;
-    g.save.write();
     g.enterLevel('hub', 'start');
   }
 }

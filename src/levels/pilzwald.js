@@ -141,7 +141,7 @@ export default {
       this.t += dt;
       face.position.set(OAK.x, oy + 5 + Math.sin(this.t * 1.2) * 0.05, OAK.z + OAK.r - 0.2);
       mouth.scale.y = this.talking ? 0.6 + Math.abs(Math.sin(this.t * 12)) * 0.6 : 1;
-      if (this.distPlayer() < this.talkRadius) this.game.offerPrompt(this, 'Reden');
+      if (this.distPlayer() < this.talkRadius && Math.abs(this.player.pos.y - oy) < 2.5) this.game.offerPrompt(this, 'Reden');
     };
     L.firefly('f1', OAK.x - 2, null, OAK.z - OAK.r - 2.5);
 
@@ -312,6 +312,10 @@ async function momTalk(L, g) {
 }
 
 async function stupsiTalk(L, g, s) {
+  if (s.reunited) {
+    await g.say([{ who: 'stupsi', text: 'Hihi! Danke, dass ihr mich nach Hause gebracht habt!' }]);
+    return;
+  }
   if (s.following) {
     await g.say([{ who: 'stupsi', text: 'Wie weit ist es noch zu Mama?' }]);
     return;

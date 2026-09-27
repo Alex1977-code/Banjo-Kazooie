@@ -72,9 +72,11 @@ function showConnect() {
 }
 
 let last = '';
+let beat = 0;
 function startSending() {
   stopSending();
-  sendTimer = setInterval(() => sendState(false), 33);
+  // alle 33 ms bei Änderungen, sonst alle ~250 ms ein Lebenszeichen
+  sendTimer = setInterval(() => sendState(++beat % 8 === 0), 33);
 }
 function stopSending() {
   if (sendTimer) clearInterval(sendTimer);
@@ -106,7 +108,16 @@ async function requestWake() {
 }
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && !$('#pad').hidden) requestWake();
+  if (document.hidden) releaseAll();
 });
+window.addEventListener('pagehide', releaseAll);
+
+// Beim Wegschalten nichts "gedrückt" lassen
+function releaseAll() {
+  pad.reset();
+  pad.tapped = 0;
+  sendState(true);
+}
 
 const touch = new TouchControls($('#touch'), pad);
 touch.setVisible(false);

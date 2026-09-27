@@ -126,9 +126,10 @@ export class RemoteHost {
     conn.on('data', (m) => this.onData(m));
     const drop = () => {
       if (!this.conns.delete(conn)) return;
+      g.input.remotePad.reset();
       if (!this.conns.size) {
         g.remoteConnected = false;
-        g.input.remotePad.reset();
+        if (g.input.device === 'remote') g.input.fallbackDevice();
         g.updateTouchVisibility();
         g.toast('Handy-Controller getrennt', 3);
       }
