@@ -8,7 +8,7 @@ import { rng, fbm, lerp } from '../engine/util.js';
 import { Terrain, defaultColorRule } from './terrain.js';
 import {
   Shard, Firefly, Apple, BerryField, NPC, Lernstein, Beetle, Grimmpilz, Crab, Cactus, Portal,
-  Trigger, Platform, Breakable, PoundSpot, Bouncer, Follower, signTexture,
+  Trigger, Platform, Breakable, PoundSpot, Bouncer, Follower, signTexture, Feather, RaceFlag,
 } from './entities.js';
 
 const C = (hex) => new THREE.Color(hex);
@@ -34,6 +34,8 @@ export class Level {
     this.animated = [];
     this.fireflyTotal = 0;
     this.shardTotal = 0;
+    this.featherTotal = 0;
+    this.courses = [];
   }
 
   get save() { return this.game.save; }
@@ -412,6 +414,30 @@ export class Level {
     if (this.save.hasShard(`${this.id}:${id}`)) return null;
     return this.spawn(new Shard(this, id, x, y, z, opts));
   }
+  // Schwebende Felsinsel (z.B. für Goldfedern – nur im Gleitflug erreichbar)
+  floatingIsland(x, z, top, { r = 3, color = 0x5a9a3a } = {}) {
+    this.add(G.rock(r * 1.15, Math.floor(Math.abs(x * 3 + z))), M(x, top - r * 0.95, z, 0, [1, 0.9, 1]), 0x8a8478, 'rock', 0.4, { flat: true, shade: 0.1 });
+    this.add(G.cyl(r, r * 0.92, 0.5, 10), M(x, top - 0.5, z), color, 'ground', 0.4);
+    this.world.addCyl({ x, z, y: top - r * 1.7, r, h: r * 1.7 });
+  }
+  // Goldfeder: nur mit dem Gleitflug erreichbar
+  feather(id, x, y, z) {
+    this.featherTotal++;
+    y ??= this.groundTop(x, z) + 1;
+    if (this.save.data.feathers[`${this.id}:${id}`]) return null;
+    return this.spawn(new Feather(this, id, x, y, z));
+  }
+  // Zeitrennen: Startfahne + Ringe (points: [[x, z, Höhe über Boden], …]), Pokal-Zeit in s
+  raceCourse({ flag, start, points, target, who, name }) {
+    const course = {
+      level: this, id: this.id, name: name || this.name, who, target,
+      start: { x: start[0], z: start[1], facing: start[2] ?? 0 },
+      points: points.map(([x, z, h = 1.5, y]) => ({ x, y: (y ?? this.groundTop(x, z)) + h, z })),
+    };
+    this.courses.push(course);
+    this.spawn(new RaceFlag(this, course, flag[0], this.groundTop(flag[0], flag[1]), flag[1], flag[2] ?? 0));
+    return course;
+  }
   firefly(id, x, y, z) {
     this.fireflyTotal++;
     y ??= this.groundTop(x, z) + 1.4;
@@ -475,6 +501,8 @@ export class Level {
     if (this.ffShard && this.save.levelFireflies(this.id) >= this.fireflyTotal) this.spawnFireflyShard(false);
     const collected = this.save.data.berries[this.id] || [];
     this.berries = this.spawn(new BerryField(this, this.berryPos, collected));
+    // Summen dieser Welt merken – fürs Pausenmenü ("was fehlt noch?")
+    this.save.data.stats[this.id] = { shards: this.shardTotal, fireflies: this.fireflyTotal, berries: this.berries.total, feathers: this.featherTotal, race: this.courses.length };
     this.game.renderer.scene.add(this.root);
   }
 

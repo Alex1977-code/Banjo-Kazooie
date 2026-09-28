@@ -2,6 +2,7 @@
 // Maus, Tastatur und Controller.
 import { B } from '../engine/input.js';
 import { QUALITY } from '../engine/renderer.js';
+import { WORLDS, TOTAL_SHARDS, FEATHER_TOTAL } from '../levels/index.js';
 
 const $ = (s) => document.querySelector(s);
 
@@ -200,6 +201,7 @@ export class Menus {
       }, 'secondary'));
     }
     items.push(this.button('Optionen', () => this.openOptions(), 'secondary'));
+    items.push(this.button('Fortschritt', () => this.openProgress(), 'secondary'));
     items.push(this.button('Steuerung', () => this.openHelp(), 'secondary'));
     items.push(this.button('Fernseher & Controller', () => this.openTV(), 'secondary'));
     items.push(this.button('Hauptmenü', () => {
@@ -212,7 +214,7 @@ export class Menus {
     items.forEach((i) => menu.append(i.el));
     const moves = g.save.data.moves;
     const learned = ['Sprung', 'Flattersprung', 'Rolle', 'Schnabelhieb']
-      .concat(moves.highjump ? ['Hochsprung'] : [], moves.pound ? ['Stampfer'] : [], moves.dive ? ['Tauchen'] : []);
+      .concat(moves.highjump ? ['Hochsprung'] : [], moves.pound ? ['Stampfer'] : [], moves.dive ? ['Tauchen'] : [], moves.glide ? ['Gleitflug'] : []);
     const stat = (ico, val, label) => h('div', { class: 'stat' }, h('i', { class: `ico ${ico}` }), h('b', {}, val), h('small', {}, label));
     const panel = h('div', { class: 'panel' },
       h('h2', {}, L.name),
@@ -224,6 +226,32 @@ export class Menus {
       h('p', { class: 'help', style: 'text-align:center;margin:0 0 12px' }, `Fähigkeiten: ${learned.join(' · ')}`),
       menu);
     this.push(this.screen({ items, back: resume, pauseCloses: true, content: [panel] }));
+  }
+
+  // ---------- Fortschritt: was fehlt noch in welcher Welt? ----------
+  openProgress() {
+    const g = this.game, s = g.save, d = s.data;
+    const fmt = (t) => t.toFixed(1).replace('.', ',') + ' s';
+    const rows = WORLDS.map((w) => {
+      const st = d.stats[w.id];
+      if (!st) return `<tr><td><b>${w.name}</b></td><td colspan="4" style="opacity:.7">noch nicht entdeckt</td></tr>`;
+      const cell = (have, total) => (total ? `${have}/${total}${have >= total ? ' ✓' : ''}` : '–');
+      const feathers = Object.keys(d.feathers).filter((k) => k.startsWith(w.id + ':')).length;
+      const race = st.race ? (d.times[w.id] ? `${fmt(d.times[w.id])}${d.trophies[w.id] ? ' Pokal' : ''}` : 'offen') : '–';
+      return `<tr><td><b>${w.name}</b></td><td>${cell(s.levelShards(w.id), st.shards)}</td><td>${cell(s.levelFireflies(w.id), st.fireflies)}</td>`
+        + `<td>${cell((d.berries[w.id] || []).length, st.berries)}</td><td>${cell(feathers, st.feathers)}</td><td>${race}</td></tr>`;
+    }).join('');
+    const back = this.button('Zurück', () => this.pop());
+    back.el.style.width = '100%';
+    const panel = h('div', { class: 'panel help progress', html: `
+      <h2>Fortschritt</h2>
+      <table>
+        <tr><td></td><td><b>Splitter</b></td><td><b>Glühw.</b></td><td><b>Beeren</b></td><td><b>Federn</b></td><td><b>Rennen</b></td></tr>
+        ${rows}
+      </table>
+      <p>Sonnensplitter gesamt: <b>${s.totalShards()} / ${TOTAL_SHARDS}</b> · Goldfedern: <b>${g.featherCount()} / ${FEATHER_TOTAL}</b> · Pokale: <b>${Object.keys(d.trophies).length}</b></p>` });
+    panel.append(back.el);
+    this.push(this.screen({ items: [back], back: () => this.pop(), content: [panel] }));
   }
 
   // ---------- Optionen ----------
@@ -279,6 +307,7 @@ export class Menus {
         <tr><td>Hochsprung*</td><td>Z halten, dann A – ganz hoch hinaus.</td></tr>
         <tr><td>Stampfer*</td><td>Z in der Luft – zerbricht rissige Steine.</td></tr>
         <tr><td>Tauchen*</td><td>Z im Wasser, A schwimmt nach oben.</td></tr>
+        <tr><td>Gleitflug*</td><td>Nach dem Flattern A weiter halten – Kiki segelt weit. Lenken mit dem Stick.</td></tr>
       </table>
       <p>* lernst du an den leuchtenden Lernsteinen.</p>` });
     panel.append(back.el);
@@ -343,9 +372,10 @@ export class Menus {
       g.updateTouchVisibility();
     });
     const panel = h('div', { class: 'panel credits' },
-      h('h2', {}, 'Ende'),
+      h('h2', {}, stats.title || 'Ende'),
       h('p', {}, 'Der Sonnenstein strahlt wieder über dem Wurzeltal!'),
       h('p', {}, `Sonnensplitter: ${stats.shards} · Beeren: ${stats.berries} · Spielzeit: ${stats.time}`),
+      stats.extra ? h('p', {}, stats.extra) : null,
       h('p', { style: 'opacity:.8;font-size:15px' }, 'Bruno & Kiki – ein Fan-Projekt im Geiste der N64-Jump\'n\'Runs. Alle Figuren, Musik und Grafiken sind eigens für dieses Spiel erstellt.'),
       h('div', { class: 'menu' }, cont.el));
     this.push(this.screen({ items: [cont], content: [panel] }));

@@ -113,6 +113,18 @@ export default {
     L.add(G.cyl(3, 2.8, 0.5, 10), M(22.5, BASE + 1.9, 34), 0x5a8a4a, 'ground', 0.4);
     L.world.addCyl({ x: 22.5, z: 34, y: BASE - 2, r: 2.9, h: 4.4 });
     L.berryRing(22.5, 34, 1.8, 6, BASE + 3.3);
+    // Goldfeder auf einem Felsbrocken im Nebel – von der Turmspitze aus im Gleitflug
+    L.floatingIsland(40, 5, -4, { color: 0x5a7a5a });
+    L.feather('nebelfels', 40, -2.7, 5);
+    // Zeitrennen: Wölkchen stoppt die Zeit für den Treppenlauf nach oben
+    const wolk = makeCloud();
+    wolk.scale.setScalar(0.8);
+    L.npc(wolk, -5, 30, { y: BASE + 0.4, who: 'wolke', facing: 0.8, talk: (g) => g.say([{ who: 'wolke', text: 'Pfff ... Ich bin Wölkchen! Wie schnell schafft ihr die Treppe bis ganz nach oben? Die Zielflagge neben mir startet das Rennen!' }]) });
+    const stair = (i, h = 1.5) => { const a = A0 + i * DA; return [Math.cos(a) * STAIR_R, Math.sin(a) * STAIR_R, h, BASE + RISE * (i + 1)]; };
+    L.raceCourse({
+      flag: [-3, 32, 0.5], start: [0, 28, Math.PI - 0.2], target: 10, who: 'wolke', name: 'Treppenlauf',
+      points: [stair(0), stair(6), stair(12), stair(18), stair(24), stair(30), [Math.cos(A0 + 30 * DA) * 12, Math.sin(A0 + 30 * DA) * 12, 1.5, 0]],
+    });
     L.apple(22.5, 34, BASE + 2.4);
 
     // trockene Grasbüschel auf der Bonusinsel – hier oben weht es kräftig

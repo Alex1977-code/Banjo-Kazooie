@@ -18,7 +18,8 @@ import { BlobShadow } from './entities.js';
 import { Menus } from './menus.js';
 import { Mood } from './mood.js';
 import { Ambient } from './ambient.js';
-import { LEVELS } from '../levels/index.js';
+import { Race } from './race.js';
+import { LEVELS, FEATHER_TOTAL, TOTAL_SHARDS } from '../levels/index.js';
 
 const $ = (s) => document.querySelector(s);
 
@@ -38,6 +39,7 @@ export class Game {
     this.player = new Player(this);
     this.mood = new Mood(this);
     this.ambient = new Ambient(this);
+    this.race = new Race(this);
     this.fxWind = 1;
     this.renderer.scene.add(this.player.model);
     this.camRig = new CameraRig(this.renderer.camera, null);
@@ -169,6 +171,7 @@ export class Game {
     this.timers.length = 0;
     this.tweens.length = 0;
     this.playerShadow = null;
+    this.race?.stop();
     this.ambient.setup({ def: {} });
     this.dying = false;
     this.falling = false;
@@ -221,7 +224,32 @@ export class Game {
 
   maxHealth() {
     const allBerries = Object.keys(this.save.data.flags).filter((k) => k.endsWith(':allBerries')).length;
-    return 5 + allBerries + (this.save.data.hearts || 0);
+    const feathers = this.featherCount() >= FEATHER_TOTAL ? 1 : 0;
+    return 5 + allBerries + (this.save.data.hearts || 0) + feathers;
+  }
+
+  featherCount() {
+    return Object.keys(this.save.data.feathers || {}).length;
+  }
+
+  collectFeather(f) {
+    this.save.data.feathers[f.key] = true;
+    this.save.write();
+    const n = this.featherCount();
+    this.audio.play('learn');
+    this.particles.emit('sparkle', f.pos.x, f.pos.y + 0.5, f.pos.z, 30, [1, 0.9, 0.4]);
+    this.input.rumble(150, 0.6);
+    if (n >= FEATHER_TOTAL) {
+      this.player.maxHealth = this.maxHealth();
+      this.player.heal(this.player.maxHealth);
+      this.hud.banner('Alle Goldfedern!', 'Kiki schenkt dir ein zusätzliches Herz!', 3);
+    } else {
+      this.hud.banner('Goldfeder!', `${n} von ${FEATHER_TOTAL} gefunden`, 2.2);
+    }
+  }
+
+  allShards() {
+    return this.save.totalShards() >= TOTAL_SHARDS;
   }
 
   refreshCounters() {
@@ -252,6 +280,14 @@ export class Game {
       await this.wait(1.8);
       p.setState(p.diving ? 'dive' : p.swimming ? 'swim' : p.onGround ? 'idle' : 'fall');
       await L.def.onShard?.(L, this, shard.id);
+      // der letzte Splitter: ab nach Hause (oder zuerst noch zu König Krötus)
+      if (this.allShards() && !this.save.data.flags['hub:complete']) {
+        const home = this.save.data.flags['hub:restored'];
+        await this.say([{ who: 'kiki', text: home
+          ? 'Bruno! Das war der letzte Sonnensplitter! Schnell zurück zum Wurzelhügel – der Sonnenstein wird strahlen wie nie zuvor!'
+          : 'Bruno! Wir haben alle Sonnensplitter! Jetzt fehlt nur noch König Krötus in seinem Turm!' }]);
+        if (home && L.id === 'hub') L.def.onAllShards?.(L, this);
+      }
     });
     for (const e of L.entities) if (e.refresh) e.refresh();
   }
@@ -434,6 +470,7 @@ export class Game {
     const camInput = { camX: input.camX * cs, camY: input.camY * inv * cs, camDragX: input.camDragX * cs, camDragY: input.camDragY * inv * cs };
     this.camRig.update(dt, this.player, camInput);
     this.playerShadow?.update(this.player.pos.x, this.player.pos.y, this.player.pos.z);
+    this.race.update(dt);
     if (first) this.updateListener(this.player.pos);
     this.mood.update(dt);
     this.ambient.update(dt);

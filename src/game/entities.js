@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import {
   makeShard, makeApple, makeBeetle, makeGrimmpilz, makeCrab, makeCactus, makeLernstein, makeFirefly,
+  makeFeather, makeRaceFlag,
 } from './models.js';
 import { G, mat, part, mergeStatic } from '../engine/geo.js';
 import { damp, dampAngle, clamp } from '../engine/util.js';
@@ -154,6 +155,55 @@ export class Shard extends Entity {
   collect() {
     this.remove();
     this.game.collectShard(this);
+  }
+}
+
+// ---------- Goldfeder (nur mit dem Gleitflug erreichbar) ----------
+export class Feather extends Entity {
+  constructor(level, id, x, y, z) {
+    super(level, x, y, z);
+    this.key = `${level.id}:${id}`;
+    this.setObj(makeFeather());
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: this.game.tex.glow, color: 0xffe07a, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+    }));
+    glow.scale.setScalar(2.6);
+    glow.position.y = 0.5;
+    this.obj.add(glow);
+    this.shadow = new BlobShadow(level, 0.9);
+  }
+  update(dt) {
+    this.t += dt;
+    this.obj.rotation.y = this.t * 1.8;
+    this.obj.rotation.z = Math.sin(this.t * 1.3) * 0.25;
+    this.obj.position.y = this.pos.y + Math.sin(this.t * 2) * 0.2;
+    this.shadow.update(this.pos.x, this.pos.y - 0.3, this.pos.z);
+    if (Math.random() < dt * 3) this.game.particles.emit('sparkle', this.pos.x, this.pos.y + 0.5, this.pos.z, 1, [1, 0.9, 0.5]);
+    if (this.player.state !== 'dead' && this.touchingPlayer(0.9, 1.6)) {
+      this.remove();
+      this.game.collectFeather(this);
+    }
+  }
+}
+
+// ---------- Startfahne für ein Zeitrennen ----------
+export class RaceFlag extends Entity {
+  constructor(level, course, x, y, z, facing = 0) {
+    super(level, x, y, z);
+    this.course = course;
+    this.setObj(makeRaceFlag());
+    this.obj.rotation.y = facing;
+    this.rig = this.obj.userData.rig;
+    level.world.addCyl({ x, z, y, r: 0.2, h: 2.6, camBlock: false });
+  }
+  update(dt) {
+    this.t += dt;
+    this.rig.flag.rotation.y = Math.sin(this.t * 3) * 0.25;
+    const race = this.game.race;
+    if (!race.active && this.distPlayer() < 2.4 && Math.abs(this.player.pos.y - this.pos.y) < 2) this.game.offerPrompt(this, 'Zeitrennen');
+  }
+  interact() {
+    return this.game.race.offer(this.course);
   }
 }
 

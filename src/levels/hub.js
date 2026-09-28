@@ -4,12 +4,13 @@ import { G, M, mat, part } from '../engine/geo.js';
 import { defaultColorRule } from '../game/terrain.js';
 import { makeTilo, makeToadKing, makeShard, makeSnail } from '../game/models.js';
 import { fbm, rng } from '../engine/util.js';
-import { TOTAL_SHARDS } from './index.js';
+import { TOTAL_SHARDS, FEATHER_TOTAL } from './index.js';
 
 const SUN_HILL = { x: 0, z: -46, r: 11, h: 10 };
 const PILLAR = { x: -28, z: -20 };
 const SLAB = { x: 24, z: -24 };
 const FIRE = { x: 9.5, z: 13 }; // Opa Tilos Lagerfeuer
+const FROST_GATE = { x: -46, z: -44 }; // Eistor zum Frostgipfel
 
 function gloomColors(L) {
   const g = L.game;
@@ -72,6 +73,7 @@ export default {
     T.plateau(48, -8, 6, 0.6, 4, 'set');
     T.plateau(42, 38, 6, 0.4, 4, 'set');
     T.plateau(0, -73, 7, 1, 4, 'set');
+    T.plateau(FROST_GATE.x, FROST_GATE.z, 6, 0.8, 4, 'set');
     T.plateau(0, 12, 7, 0.3, 5, 'set');
 
     // Wege
@@ -81,6 +83,8 @@ export default {
     T.path([[4, 2], [24, -2], [44, -8]], 2.8, dirt);
     T.path([[6, 14], [22, 26], [38, 37]], 2.6, dirt);
     T.path([[4, -8], [-10, -40], [-4, -62], [0, -70]], 2.6, dirt);
+    T.path([[-10, -40], [-24, -44], [-40, -44]], 2.4, dirt);
+    T.paint(FROST_GATE.x, FROST_GATE.z, 6, 0xeef4fc, 3);
     T.paint(0, 12, 5, 0xa87a48, 3);
     T.paint(SUN_HILL.x, SUN_HILL.z, 5, 0xc9b98a, 3);
     L.finishTerrain(defaultColorRule({ grass: 0x5db53a, grass2: 0x8fcf45, rockSlope: 0.95, sand: 0xd8c07a, sandLevel: -0.8 }));
@@ -150,6 +154,14 @@ export default {
       stoneGroup.position.y = hy + 3.2 + Math.sin(t * 1.5) * 0.15;
     });
     L.sign(18, -20, -0.6, 'Sonnenhügel', '');
+    // Goldfeder auf einer schwebenden Insel – vom Sonnenhügel aus im Gleitflug erreichbar
+    L.floatingIsland(27, -61, 8);
+    L.feather('insel', 27, 9.3, -61);
+    // Zeitrennen bei Lotti – ausgerechnet die langsamste Schnecke stoppt die Zeit
+    L.raceCourse({
+      flag: [-6, 12, 0.9], start: [-6, 8, 2.1], target: 13, who: 'lotti',
+      points: [[4, 2], [6, -10], [18, -22], [28, -8], [24, 6], [12, 4], [0, 6]],
+    });
 
     // ---------- Felsturm (Hochsprung-Aufgabe) ----------
     const py = L.gy(PILLAR.x, PILLAR.z);
@@ -215,6 +227,28 @@ export default {
     L.portal(48, -8, { rot: -Math.PI / 2, to: 'pilz', spawn: 'start', need: 1, label: 'Pilzwald', color: 0x8adf5a });
     L.portal(42, 38, { rot: -Math.PI / 2 - 0.4, to: 'beach', spawn: 'start', need: 4, label: 'Muschelbucht', color: 0x5ad0ff });
     L.portal(0, -73, { rot: 0, to: 'turm', spawn: 'start', need: 10, label: 'Krötenturm', color: 0xa06aff });
+    L.portal(FROST_GATE.x, FROST_GATE.z, { rot: Math.PI / 2 + 0.1, to: 'frost', spawn: 'start', need: 7, label: 'Frostgipfel', color: 0xbfe8ff });
+    L.spawnPoint('from-frost', FROST_GATE.x + 9, FROST_GATE.z + 1, Math.PI / 2);
+    L.sign(FROST_GATE.x + 8, FROST_GATE.z + 5, Math.PI / 2 + 0.3, 'Frostgipfel', 'Brrr!');
+    // ein paar Schneehaufen und Eiszapfen am Tor
+    for (let i = 0; i < 5; i++) {
+      const a = i * 1.3 + 0.4, x = FROST_GATE.x + Math.cos(a) * 5, z = FROST_GATE.z + Math.sin(a) * 5;
+      L.add(G.hemi(0.9 + (i % 2) * 0.4, 10, 5), M(x, L.gy(x, z) - 0.1, z, 0, [1, 0.6, 1]), 0xf4f8ff, 'plain');
+    }
+    // der Frostgipfel ragt weit hinten über die Klippen
+    const peak = new THREE.Group();
+    const rockM = new THREE.MeshBasicMaterial({ color: 0x8a9ab8, fog: false }), snowM = new THREE.MeshBasicMaterial({ color: 0xf2f6fc, fog: false });
+    for (const [x, z, h, r] of [[0, 0, 190, 70], [-60, 30, 130, 55], [70, 20, 120, 50]]) {
+      const c = new THREE.Mesh(new THREE.ConeGeometry(r, h, 6).translate(0, h / 2, 0), rockM);
+      c.position.set(x, -20, z);
+      peak.add(c);
+      const cap = new THREE.Mesh(new THREE.ConeGeometry(r * 0.42, h * 0.42, 6).translate(0, h * 0.79, 0), snowM);
+      cap.position.set(x, -20, z);
+      peak.add(cap);
+    }
+    peak.position.set(-260, 0, -250);
+    peak.rotation.y = 0.5;
+    L.root.add(peak);
     L.spawnPoint('start', 0, 12, Math.PI);
     L.spawnPoint('from-pilz', 37, -8, -Math.PI / 2);
     L.spawnPoint('from-beach', 32, 34, -Math.PI / 2 - 0.4);
@@ -289,6 +323,11 @@ export default {
   onEnter(L, g) {
     if (!L.flag('intro')) intro(L, g);
     else if (L.flag('restored') && !L.flag('ending')) ending(L, g);
+    else if (L.flag('restored') && g.allShards() && !L.flag('complete')) complete(L, g);
+  },
+
+  onAllShards(L, g) {
+    if (L.flag('restored') && L.flag('ending') && !L.flag('complete')) complete(L, g);
   },
 
   async onShard(L, g) {
@@ -318,14 +357,19 @@ async function tiloTalk(L, g) {
     return;
   }
   if (L.flag('restored')) {
-    await g.say([{ who: 'tilo', text: 'Seht nur, wie die Sonne wieder scheint! Ihr zwei seid die Helden des Wurzeltals. Und jetzt ab, es gibt bestimmt noch Beeren zu finden!' }]);
+    const left = TOTAL_SHARDS - n;
+    await g.say([{ who: 'tilo', text: left > 0
+      ? `Seht nur, wie die Sonne wieder scheint! Aber ${left === 1 ? 'ein Splitter fehlt' : `${left} Splitter fehlen`} noch – erst dann strahlt der Sonnenstein in voller Pracht. Im Pausenmenü unter „Fortschritt“ seht ihr, wo.`
+      : 'Der Sonnenstein ist vollständig! Ihr zwei seid die größten Helden, die das Wurzeltal je gesehen hat.' }]);
+    if (s.data.moves.glide && g.featherCount() < FEATHER_TOTAL) await g.say([{ who: 'tilo', text: 'Übrigens: Mit dem Gleitflug kommt ihr an Stellen, die vorher unerreichbar waren. Dort sollen Goldfedern liegen – von ganz oben losgleiten!' }]);
     return;
   }
   let hint;
   if (!s.hasShard('hub:felsturm')) hint = 'Der Splitter auf dem Felsturm wartet! Lern am Teich den Hochsprung: Z halten, dann A.';
   else if (!s.hasShard('hub:platte')) hint = 'Östlich vom Sonnenhügel liegt eine rissige Steinplatte. Mit dem Stampfer vom Lernstein daneben bekommst du sie kaputt!';
   else if (n < 4) hint = `Im Pilzwald hinter dem grünen Tor gibt es noch Splitter. Für die Muschelbucht braucht ihr 4, ihr habt ${n}.`;
-  else if (n < 10) hint = `Die Muschelbucht ist offen! Für den Krötenturm braucht ihr 10 Splitter. Ihr habt schon ${n}.`;
+  else if (n < 7) hint = `Die Muschelbucht ist offen! Ab 7 Splittern öffnet sich im Nordwesten das Eistor zum Frostgipfel. Ihr habt ${n}.`;
+  else if (n < 10) hint = `Das Eistor zum Frostgipfel im Nordwesten ist offen – zieht euch warm an! Für den Krötenturm braucht ihr 10 Splitter, ihr habt ${n}.`;
   else hint = 'Ihr habt genug Splitter für den Krötenturm! Zeigt diesem aufgeblasenen König Krötus, was eine Harke ist. Das Tor liegt im Norden.';
   await g.say([{ who: 'tilo', text: hint }]);
 }
@@ -511,6 +555,58 @@ async function intro(L, g) {
     p.facing = Math.atan2(6 - p.pos.x, 11 - p.pos.z);
   });
   g.toast('Sprich mit Opa Tilo (B)', 4);
+}
+
+// Abschluss: alle Sonnensplitter gefunden – der Sonnenstein strahlt in voller Pracht
+async function complete(L, g) {
+  L.setFlag('complete');
+  const hx = SUN_HILL.x, hz = SUN_HILL.z, hy = SUN_HILL.h;
+  const p = g.player, s = g.save;
+  // Strahlenkranz um den Sonnenstein
+  const rays = new THREE.Group();
+  const rayMat = new THREE.MeshBasicMaterial({ color: 0xffe89a, transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+  for (let i = 0; i < 12; i++) {
+    const r = new THREE.Mesh(new THREE.ConeGeometry(0.8, 14, 4, 1, true).translate(0, 7, 0), rayMat);
+    r.rotation.z = (i / 12) * Math.PI * 2;
+    rays.add(r);
+  }
+  rays.position.set(hx, hy + 3.4, hz);
+  rays.scale.setScalar(0.01);
+  L.root.add(rays);
+  L.animated.push((dt, t) => { rays.rotation.y = t * 0.3; rays.rotation.x = Math.sin(t * 0.4) * 0.2; });
+  await g.cutscene(async () => {
+    g.audio.playMusic('victory');
+    p.spawn(hx + 2, hy, hz + 5, Math.PI + 0.3);
+    L.tilo.pos.set(hx - 2.5, hy, hz + 5);
+    await g.camTo([hx + 14, hy + 7, hz + 16], [hx, hy + 3, hz], 0);
+    await g.camTo([hx + 6, hy + 4, hz + 12], [hx, hy + 3.5, hz], 2.5);
+    await g.tween(1.5, (k) => rays.scale.setScalar(0.01 + k));
+    g.audio.play('shard');
+    for (let i = 0; i < 10; i++) {
+      // Feuerwerk aus Funken
+      const a = Math.random() * Math.PI * 2, d = 6 + Math.random() * 10;
+      const col = [[1, 0.8, 0.3], [1, 0.4, 0.6], [0.5, 0.8, 1], [0.6, 1, 0.5]][i % 4];
+      g.particles.emit('sparkle', hx + Math.cos(a) * d, hy + 10 + Math.random() * 8, hz + Math.sin(a) * d, 40, col);
+      g.audio.play('pop');
+      await g.wait(0.35);
+    }
+    await g.camTo([hx + 1, hy + 2.6, hz + 11], [hx, hy + 1.8, hz + 4], 1.2);
+    await g.say([
+      { who: 'tilo', text: `Alle ${TOTAL_SHARDS} Sonnensplitter! So hell hat der Sonnenstein nicht einmal zu Zeiten meines Urgroßvaters geleuchtet.` },
+      { who: 'kiki', text: 'Und das ganz ohne Kuchenpause! Na gut ... fast ohne.' },
+      { who: 'bruno', text: 'Das Wurzeltal ist sicher. Und König Krötus sammelt jetzt hoffentlich Briefmarken statt Sonnensteine.' },
+      { who: 'tilo', text: 'Ihr seid wahre Helden. Kommt, das ganze Tal feiert euch!' },
+    ]);
+    p.setState('dance');
+    await g.wait(1.6);
+    p.setState('idle');
+  });
+  const t = Math.round(s.data.playTime / 60);
+  g.menus.openCredits({
+    title: 'Geschafft – 100 % Sonnenstein!',
+    shards: `${s.totalShards()} / ${TOTAL_SHARDS}`, berries: s.totalBerries(), time: `${Math.floor(t / 60)} h ${t % 60} min`,
+    extra: `Goldfedern: ${g.featherCount()} / ${FEATHER_TOTAL} · Pokale: ${Object.keys(s.data.trophies).length}`,
+  });
 }
 
 async function ending(L, g) {

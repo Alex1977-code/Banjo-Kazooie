@@ -207,6 +207,20 @@ body.no-touch .hud-right { right: calc(16px + var(--safe-r)); }
 #bossbar .bar { height: 14px; border: 3px solid #1a0a30; border-radius: 8px; background: rgba(20, 10, 40, 0.7); overflow: hidden; margin-top: 2px; }
 #bossbar .fill { height: 100%; width: 100%; background: linear-gradient(#e070ff, #8a2ad8); transition: width 0.3s; }
 
+#race {
+  position: absolute;
+  left: 50%;
+  top: calc(48px + var(--safe-t));
+  transform: translateX(-50%);
+  text-align: center;
+  font-family: 'LuckiestGuy', Impact, sans-serif;
+  color: #ffe27a;
+  text-shadow: var(--outline);
+  pointer-events: none;
+}
+#race b { display: block; font-size: 30px; font-weight: normal; letter-spacing: 1px; }
+#race small { display: block; font-size: 15px; color: #fff; }
+
 /* ---------------- Touch ---------------- */
 #touch {
   position: absolute;

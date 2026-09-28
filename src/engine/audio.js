@@ -133,6 +133,20 @@ const SONGS = {
       ['drum', drums('k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2'), 0.45],
     ],
   }),
+  // Frostgipfel: helles Glockenspiel über warmen Flächen, gemütlich im Schnee
+  frost: () => ({
+    bpm: 104, swing: 0.1,
+    tracks: [
+      ['steel', melody(`E5:2 G5:2 B5:4 A5:2 G5:2 E5:4  F#5:2 A5:2 D6:4 C6:2 B5:2 A5:4
+        G5:2 B5:2 E6:4 D6:2 C6:2 B5:2 A5:2  B5:6 .:2 E5:2 F#5:2 G5:4
+        C6:2 B5:2 A5:2 G5:2 E5:4 G5:4  D5:2 F#5:2 A5:2 D6:2 C6:4 B5:4
+        A5:2 C6:2 E6:4 D6:2 B5:2 G5:4  E5:8 .:8`), 0.42],
+      ['pad', accomp('Em D C B7 Am D Em Em', 'pad', 1), 0.1],
+      ['bass', accomp('Em D C B7 Am D Em Em', 'walk'), 0.5],
+      ['pluck', accomp('Em D C B7 Am D Em Em', 'arp'), 0.1],
+      ['drum', drums('k:4 h:4 s:4 h:2 h:2'), 0.25],
+    ],
+  }),
   // Bosskampf im Pilzwald: grantig-hüpfend in d-Moll
   pilzboss: () => ({
     bpm: 138, swing: 0.1,
@@ -182,6 +196,10 @@ const VOICES = {
   koenig: { base: 105, type: 'sawtooth', spread: 0.35, formant: 600 },
   pilz: { base: 520, type: 'square', spread: 0.25, formant: 2000 },
   fuerst: { base: 125, type: 'sawtooth', spread: 0.3, formant: 750 },
+  pippo: { base: 560, type: 'square', spread: 0.35, formant: 2200 },
+  schnuppi: { base: 330, type: 'triangle', spread: 0.2, formant: 1300 },
+  bibber: { base: 95, type: 'sawtooth', spread: 0.4, formant: 650 },
+  wolke: { base: 640, type: 'sine', spread: 0.2, formant: 2600 },
   lotti: { base: 380, type: 'triangle', spread: 0.3, formant: 1600 },
   igel: { base: 420, type: 'square', spread: 0.25, formant: 1800 },
   stupsi: { base: 700, type: 'square', spread: 0.3, formant: 2600 },
@@ -200,6 +218,7 @@ export const REVERB = {
   pilz: { time: 2.4, decay: 2.1, damp: 0.8, early: 0, wet: 0.3, pre: 0.02 },
   beach: { time: 0.7, decay: 3.4, damp: 0.25, early: 0, wet: 0.09, pre: 0.005 },
   turm: { time: 3.6, decay: 1.7, damp: 0.2, early: 0.6, wet: 0.34, pre: 0.03 },
+  frost: { time: 2.2, decay: 2.3, damp: 0.3, early: 0.1, wet: 0.22, pre: 0.02 },
 };
 
 // Umgebungsgeräusche pro Welt: durchgehende Flächen (beds) und zufällige
@@ -209,6 +228,7 @@ const AMBIENCE = {
   pilz: { beds: [['night', 0.05]], events: [['cricket', 0.35, 0.9], ['owl', 12, 26]] },
   beach: { beds: [['surf', 0.065]], events: [['wave', 5.5, 8.5], ['gull', 4, 11]] },
   turm: { beds: [['howl', 0.24], ['wind', 0.04]], events: [['gust', 2.5, 6], ['drip', 0.8, 3.5], ['rumble', 14, 30]] },
+  frost: { beds: [['wind', 0.06], ['howl', 0.12]], events: [['gust', 3, 7], ['chime', 4, 10], ['icecrack', 12, 26]] },
 };
 
 // Menügeräusche laufen am Hall und Unterwasserfilter vorbei
@@ -688,6 +708,10 @@ export class Audio {
         this.osc('sine', 3600, 3400, t, 0.18, 0.03, d);
         this.osc('sine', 4300, 4100, t + 0.03, 0.14, 0.02, d);
         break;
+      case 'glide':
+        // Fahrtwind unter Kikis Flügeln
+        this.noise(t, 0.7, 0.1, d, { f: 700, f1: 1400, q: 0.6, attack: 0.25 });
+        break;
       case 'grumble': {
         // Fürst Fliegenpilz holt Luft und grummelt
         const o = this.osc('sawtooth', 115, 80, t, 0.6, 0.2, d, { filter: { f: 600 }, q: 3, curve: 'lin', attack: 0.05 });
@@ -909,6 +933,24 @@ export class Audio {
         const f = rand(1800, 2600);
         this.osc('sine', f, f * 0.5, t, 0.05, 0.07, d, { attack: 0.002 });
         if (Math.random() < 0.4) this.osc('sine', f * 1.3, f * 0.7, t + 0.2, 0.04, 0.03, d, { attack: 0.002 });
+        break;
+      }
+      case 'chime': {
+        // Eiszapfen klirren leise im Wind
+        const d = out(rand(-0.8, 0.8), rand(0.4, 0.8));
+        const base = rand(2400, 3400);
+        for (let i = 0; i < 3 + Math.floor(Math.random() * 3); i++) {
+          const f = base * [1, 1.26, 1.5, 1.68, 2][Math.floor(Math.random() * 5)];
+          this.osc('sine', f, f, t + i * rand(0.07, 0.16), 0.5, 0.02, d, { attack: 0.003 });
+        }
+        break;
+      }
+      case 'icecrack': {
+        // das Eis auf dem See knackt und ächzt
+        const d = out(rand(-0.6, 0.6));
+        this.noise(t, 0.05, 0.3, d, { type: 'highpass', f: 1800, attack: 0.001 });
+        const o = this.osc('sine', 180, 60, t + 0.03, 0.9, 0.12, d, { attack: 0.02, curve: 'lin' });
+        this.vibrato(o, t + 0.03, 0.9, 9, 15);
         break;
       }
       case 'rumble': {
