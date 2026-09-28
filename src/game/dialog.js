@@ -13,6 +13,7 @@ export const NAMES = {
   knack: 'Käpt\'n Knack',
   stein: 'Lernstein',
   pilz: 'Pauli Pilz',
+  fuerst: 'Fürst Fliegenpilz',
   lotti: 'Lotti Langsam',
 };
 

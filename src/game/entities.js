@@ -140,7 +140,7 @@ export class Shard extends Entity {
     this.obj.visible = true;
     this.shadow.mesh.visible = true;
     this.game.particles.emit('sparkle', this.pos.x, this.pos.y, this.pos.z, 30);
-    this.game.audio.play('secret');
+    this.game.audio.play('secret', this.pos);
   }
   update(dt) {
     this.t += dt;
@@ -192,7 +192,7 @@ export class Firefly extends Entity {
     this.callT -= dt;
     if (d < 18 && this.callT <= 0) {
       this.callT = 3 + Math.random() * 2;
-      this.game.audio.play('fireflyCall');
+      this.game.audio.play('fireflyCall', this.pos); // aus der Richtung des Glühwürmchens
     }
     if (this.touchingPlayer(0.9, 1.5)) {
       this.remove();
@@ -347,6 +347,10 @@ export class NPC extends Entity {
     if (rig?.head && this.talking) rig.head.rotation.x = Math.sin(this.t * 14) * 0.08;
     this.idleFn?.(this, dt);
     this.obj.position.copy(this.pos);
+    if (d < 7 && !this.greeted && !this.game.cinematic && this.talk) {
+      this.greeted = true;
+      for (let i = 0; i < 3; i++) this.game.audio.voice(this.who, this.pos, i * 0.1);
+    } else if (d > 14) this.greeted = false;
     if (this.talk && d < this.talkRadius && Math.abs(this.player.pos.y - this.pos.y) < 2.5) this.game.offerPrompt(this, this.promptLabel);
   }
   async interact() {
@@ -429,6 +433,24 @@ export class Enemy extends Entity {
     this.shadow = new BlobShadow(level, radius * 2.2);
     this.vy = 0;
     this.onGround = true;
+    this.alertSound = null; // Laut, wenn der Gegner Bruno entdeckt
+    this.idleSound = null; // gelegentliches Geräusch, damit man ihn hört, bevor man ihn sieht
+    this.alertCool = 0;
+    this.idleT = 1 + Math.random() * 4;
+  }
+
+  sounds(dt) {
+    const a = this.game.audio;
+    this.alertCool -= dt;
+    if (this.chasing && !this.wasChasing && this.alertCool <= 0 && this.alertSound) {
+      a.play(this.alertSound, this.pos);
+      this.alertCool = 4;
+    }
+    this.wasChasing = this.chasing;
+    if (this.idleSound && (this.idleT -= dt) <= 0) {
+      this.idleT = 2.5 + Math.random() * 4;
+      if (this.distPlayer() < 30) a.play(this.idleSound, this.pos);
+    }
   }
 
   ai(dt) {
@@ -492,6 +514,7 @@ export class Enemy extends Entity {
     this.hitCool -= dt;
     if (this.stun > 0) this.stun -= dt;
     else this.ai(dt);
+    if (!this.game.cinematic) this.sounds(dt);
     if (!this.flying) {
       this.vy -= 30 * dt;
       this.pos.y += this.vy * dt;
@@ -535,7 +558,7 @@ export class Enemy extends Entity {
   hit(kind) {
     this.hp--;
     this.hitCool = 0.4;
-    this.game.audio.play('hit');
+    this.game.audio.play('hit', this.pos);
     this.game.input.rumble(60, 0.4);
     if (this.hp <= 0) this.defeat();
     else {
@@ -549,7 +572,7 @@ export class Enemy extends Entity {
 
   defeat() {
     this.dead = true;
-    this.game.audio.play('pop');
+    this.game.audio.play('pop', this.pos);
     this.game.particles.emit('pop', this.pos.x, this.pos.y + 0.5, this.pos.z, 10, this.popColor);
     this.onDefeat?.(this);
   }
@@ -559,6 +582,8 @@ export class Beetle extends Enemy {
   constructor(level, x, z, o = {}) {
     super(level, x, z, { model: makeBeetle(), speed: 2.2, radius: 0.7, height: 0.9, ...o });
     this.popColor = [1, 0.6, 0.35];
+    this.alertSound = 'beetleAlert';
+    this.idleSound = 'beetleTick';
   }
   animate() {
     super.animate();
@@ -573,6 +598,8 @@ export class Cactus extends Enemy {
   constructor(level, x, z, o = {}) {
     super(level, x, z, { model: makeCactus(), hp: 2, speed: 2.4, radius: 0.6, height: 1.9, chase: 10, stompable: false, ...o });
     this.popColor = [0.5, 0.85, 0.3];
+    this.alertSound = 'cactusAlert';
+    this.idleSound = 'cactusSpur';
   }
   animate() {
     super.animate();
@@ -587,6 +614,7 @@ export class Grimmpilz extends Enemy {
     super(level, x, z, { model: makeGrimmpilz(), speed: 3, radius: 0.65, height: 1.1, chase: 10, ...o });
     this.hopT = Math.random();
     this.popColor = [0.8, 0.5, 0.9];
+    this.alertSound = 'grimmAlert';
   }
   ai(dt) {
     this.hopT -= dt;
@@ -608,6 +636,8 @@ export class Crab extends Enemy {
   constructor(level, x, z, o = {}) {
     super(level, x, z, { model: makeCrab(false), speed: 3, radius: 0.75, height: 0.9, ...o });
     this.popColor = [1, 0.5, 0.4];
+    this.alertSound = 'crabAlert';
+    this.idleSound = 'crabClack';
   }
   animate() {
     const r = this.rig;
@@ -719,22 +749,25 @@ export class Portal extends Entity {
 
 // ---------- Trigger ----------
 export class Trigger extends Entity {
-  constructor(level, x, y, z, { r = 3, h = 4, once = true, onEnter, cond }) {
+  // always: auch während Cutscenes auslösen; onExit: beim Verlassen (z.B. Klangzonen)
+  constructor(level, x, y, z, { r = 3, h = 4, once = true, onEnter, onExit, cond, always = false }) {
     super(level, x, y, z);
     this.r = r;
     this.h = h;
     this.once = once;
     this.onEnter = onEnter;
+    this.onExit = onExit;
     this.cond = cond;
+    this.always = always;
     this.inside = false;
   }
   update() {
     const p = this.player.pos;
     const inside = Math.hypot(p.x - this.pos.x, p.z - this.pos.z) < this.r && p.y > this.pos.y - 1 && p.y < this.pos.y + this.h;
-    if (inside && !this.inside && !this.game.cinematic && (!this.cond || this.cond())) {
-      this.onEnter(this.game, this);
+    if (inside && !this.inside && (this.always || !this.game.cinematic) && (!this.cond || this.cond())) {
+      this.onEnter?.(this.game, this);
       if (this.once) this.alive = false;
-    }
+    } else if (!inside && this.inside) this.onExit?.(this.game, this);
     this.inside = inside;
   }
 }
@@ -799,7 +832,7 @@ export class Breakable extends Entity {
     if (!this.alive) return;
     this.level.world.remove(this.col);
     this.remove();
-    this.game.audio.play('shatter');
+    this.game.audio.play('shatter', this.pos);
     this.game.renderer.shake = 0.6;
     this.game.particles.emit('pop', this.pos.x, this.pos.y + 0.5, this.pos.z, 16, [0.7, 0.65, 0.6]);
     this.onBreak?.(this);
@@ -829,7 +862,7 @@ export class PoundSpot extends Entity {
     if (!this.done && p.state === 'poundland' && p.stateT < 0.05 && this.distPlayer() < 1.6 && Math.abs(p.pos.y - this.pos.y) < 1) {
       this.done = true;
       if (this.button) this.button.position.y = 0.02;
-      this.game.audio.play(this.kind === 'x' ? 'chest' : 'switch');
+      this.game.audio.play(this.kind === 'x' ? 'chest' : 'switch', this.pos);
       this.game.particles.emit('sparkle', this.pos.x, this.pos.y + 0.5, this.pos.z, 20);
       if (this.kind === 'x') this.obj.visible = false;
       this.onPound?.(this);

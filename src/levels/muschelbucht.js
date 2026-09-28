@@ -18,6 +18,10 @@ export default {
   name: 'Muschelbucht',
   subtitle: 'Welt 2',
   music: 'beach',
+  reverb: 'beach', // kurz und offen
+  ambience: { id: 'beach' }, // Brandung, Möwen
+  wind: 1.2, // frische Meeresbrise
+  ambientFx: ['spray', 'bubbles'],
   underwater: 0x1f6aa8,
 
   atmosphere() {
@@ -114,6 +118,8 @@ export default {
       const boss = L.spawn(new Knack(L, ARENA.x - 3, ARENA.z - 2, knackShard));
       L.boss = boss;
       L.trigger(ARENA.x, ARENA.z, { r: ARENA.r - 2, onEnter: () => boss.start() });
+      // während des Kampfes zieht es sich über der Arena zu
+      L.moodZone(ARENA.x, ARENA.z, { r: ARENA.r, fade: 10, cond: () => boss.active, atmo: { fog: 0x8aa0b8, hemi: 0xb0c0d0, sun: 0xffc8a0, skyTint: 0xa8b8c8, sunIntensity: 1.6, hemiIntensity: 1.3 } });
     }
     L.firefly('f3', ARENA.x - 6, null, ARENA.z + ARENA.r + 5);
     L.berryRing(ARENA.x, ARENA.z, ARENA.r + 4.5, 10);
@@ -152,13 +158,17 @@ export default {
     L.add(G.box(1.8, 1.1, 0.05), M(mx + 1.8, 9.5, mz, wr), 0x1a1a1a, 'plain');
     L.add(G.sphere(0.25, 6, 4), M(mx + 1.8, 10, mz + 0.05, wr), 0xffffff, 'plain');
     L.shard('wrack', wx, floorY + 1.6, wz);
+    // im Rumpf des Wracks klingt alles hohl
+    L.soundZone(wx, wz, { r: 8.5, y: floorY, h: 8.5, reverb: 0.25 });
     L.berryLine(loc(0, -6)[0], loc(0, -6)[1], loc(0, 6)[0], loc(0, 6)[1], 4, 0, floorY + 1.2);
     // Seegras
     const sr = rng(5);
     for (let i = 0; i < 24; i++) {
       const a = sr() * Math.PI * 2, d = 9 + sr() * 12;
       const x = wx + Math.cos(a) * d, z = wz + Math.sin(a) * d;
-      L.add(G.cone(0.4, 2 + sr() * 3, 4), M(x, L.gy(x, z), z, sr() * 6, 1, (sr() - 0.5) * 0.4), 0x2a8a4a, 'leaves');
+      const gy = L.gy(x, z), h = 2 + sr() * 3;
+      // Seegras wiegt sich in der Strömung
+      L.add(G.cone(0.4, h, 4), M(x, gy, z, sr() * 6, 1, (sr() - 0.5) * 0.4), 0x2a8a4a, 'leaves', 0.5, { wind: 1.1, windBase: gy, windH: h });
     }
     L.lernstein(-14, -33, {
       move: 'dive', title: 'Tauchen', facing: Math.PI + 0.4,
@@ -414,14 +424,14 @@ class Knack extends Entity {
         this.dirX = Math.sin(this.facing);
         this.dirZ = Math.cos(this.facing);
         this.set('charge');
-        g.audio.play('roll');
+        g.audio.play('roll', this.pos);
       }
     } else if (this.state === 'charge') {
       speed = 15 + (3 - this.hp) * 2;
       const cd = Math.hypot(this.pos.x - ARENA.x, this.pos.z - ARENA.z);
       if (cd > ARENA.r - 2.2 || this.st > 1.5) {
         this.set('stuck');
-        g.audio.play('pound');
+        g.audio.play('pound', this.pos);
         g.renderer.shake = 0.7;
         g.particles.emit('dust', this.pos.x, this.pos.y, this.pos.z, 14);
       }
@@ -461,7 +471,7 @@ class Knack extends Entity {
       if (vulnerable) this.hit();
       else if (!this.clangCool || this.t > this.clangCool) {
         this.clangCool = this.t + 0.5;
-        g.audio.play('hit');
+        g.audio.play('hit', this.pos);
         p.vel.x = (dx / d) * 10;
         p.vel.z = (dz / d) * 10;
         if (p.vel.y < 0) p.bounce(9);
@@ -475,7 +485,7 @@ class Knack extends Entity {
   hit() {
     const g = this.game;
     this.hp--;
-    g.audio.play('bosshit');
+    g.audio.play('bosshit', this.pos);
     g.renderer.shake = 0.8;
     g.input.rumble(250, 1);
     g.particles.emit('pop', this.pos.x, this.pos.y + 2, this.pos.z, 14, [1, 0.5, 0.4]);
@@ -486,7 +496,7 @@ class Knack extends Entity {
       g.hud.setBoss(null);
       this.active = false;
       this.set('dead');
-      g.audio.play('pop');
+      g.audio.play('pop', this.pos);
       return;
     }
     this.set('hurt');

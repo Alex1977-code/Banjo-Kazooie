@@ -21,11 +21,11 @@ Blechkäfern zu finden und dem Krötenkönig in seinem Turm das Handwerk zu lege
 | Welt | Was dich erwartet |
 |---|---|
 | **Wurzelhügel** (Hub) | Brunos Dachsbau, Opa Tilo erklärt alles, Lotti Langsam tauscht Beeren gegen Extra-Herzen, Lernsteine für Hochsprung & Stampfer, Felsturm und rissige Steinplatte. Tore zu allen Welten. |
-| **Pilzwald** (1 Splitter) | Pauli Pilz gibt Tipps, Opa Eiche mit Wendel-Baumpilzen bis zur Krone, Hüpfpilze zur schwebenden Insel, Giftsumpf mit Seerosen und Wölkchen, Käferlichtung voller Blechkäfer, verlorenes Igelkind Stupsi. |
+| **Pilzwald** (1 Splitter) | Pauli Pilz gibt Tipps, Opa Eiche mit Wendel-Baumpilzen bis zur Krone, Hüpfpilze zur schwebenden Insel, Giftsumpf mit Seerosen und Wölkchen, Käferlichtung voller Blechkäfer, verlorenes Igelkind Stupsi und Boss Fürst Fliegenpilz im Hexenring (Sporenwellen, Sporenregen). |
 | **Muschelbucht** (4 Splitter) | Leuchtturm mit Wendeltreppe, Tauchgang zum Schiffswrack, Schatzsuche mit Käpt'n Barnabas, Kaktus-Banditen, Boss Käpt'n Knack, schwimmende Fässer. |
 | **Krötenturm** (10 Splitter) | Aufstieg über die Außentreppe, Wölkchen-Flug zur Bonusinsel und Endkampf gegen König Krötus in drei Phasen (Goldmünzen, Bauchplatscher, Blechkäfer). |
 
-Insgesamt gibt es **14 Sonnensplitter**, über **180 Beeren**, **10 Glühwürmchen** (alle fünf einer
+Insgesamt gibt es **15 Sonnensplitter**, fast **200 Beeren**, **10 Glühwürmchen** (alle fünf einer
 Welt ergeben einen Splitter) und Extra-Herzen für alle Beeren einer Welt.
 
 ## Spielen
@@ -71,15 +71,22 @@ Luft), sowie an Lernsteinen: **Hochsprung** (Z halten + A), **Stampfer** (Z in d
 - **N64-Look:** Bild wird absichtlich in niedriger Auflösung (240p/360p) gerendert und weich
   hochskaliert, Low-Poly-Modelle aus Grundformen, Vertex-Farben, kleine prozedurale Texturen mit
   bilinearer Filterung, Blob-Schatten, Entfernungsnebel. Auflösung und „Pixel-Look“ in den Optionen.
-- **Sound komplett synthetisiert** (Web Audio): Effekte, Brabbel-Stimmen und eigene Musikstücke pro Welt.
+- **Lebendige Welt:** Bäume, Gras und Blumen wiegen sich im Wind (Vertex-Shader), Wasser mit sanften
+  Wellen, Glitzern und Schaumrand am Ufer, Umgebungspartikel (Pollen, Schmetterlinge, Sporen, Gischt,
+  Asche) und Stimmungszonen, in denen sich Nebel und Licht weich verändern. Teure Extras erst ab „Retro“.
+- **Sound komplett synthetisiert** (Web Audio): Effekte, Brabbel-Stimmen und eigene Musikstücke pro Welt,
+  Hall pro Welt (Impulsantwort aus Rauschen), Umgebungsgeräusche, Richtungshören und dumpfer Klang
+  unter Wasser.
 - **PWA:** Manifest + Service Worker → installierbar und offline spielbar.
 - Spielstand wird automatisch im Browser gespeichert.
 
 ```
 index.html            Spiel
 controller.html       Handy-Controller für den TV-Modus
-src/engine/           Renderer, Eingabe (Touch/Gamepad/Tastatur/Remote), Kamera, Kollision, Audio, Partikel
-src/game/             Spielfigur, Modelle, Gegner & Objekte, Dialoge, Menüs, HUD, Speichern
+src/engine/           Renderer, Eingabe (Touch/Gamepad/Tastatur/Remote), Kamera, Kollision, Audio,
+                      Partikel, Shader-Effekte (fx.js: Wind, Wasser, Uferschaum)
+src/game/             Spielfigur, Modelle, Gegner & Objekte, Dialoge, Menüs, HUD, Speichern,
+                      Stimmungszonen (mood.js), Umgebungspartikel (ambient.js)
 src/levels/           Wurzelhügel, Pilzwald, Muschelbucht, Krötenturm (Datei nebelturm.js)
 vendor/               three.js, PeerJS, QR-Code-Generator (siehe vendor/LICENSES.md)
 tools/                Icon-Generator

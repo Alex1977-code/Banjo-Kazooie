@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { World } from '../engine/collision.js';
 import { Batch, G, M, mat, mergeGeos } from '../engine/geo.js';
+import { waterMaterial, foamMaterial, forgetFxMaterial } from '../engine/fx.js';
 import { rng, fbm, lerp } from '../engine/util.js';
 import { Terrain, defaultColorRule } from './terrain.js';
 import {
@@ -28,6 +29,8 @@ export class Level {
     this.time = 0;
     this.T = null;
     this.waterMeshes = [];
+    this.foamZones = []; // Uferschaum: Wasserhöhe + Bereich
+    this.moodZones = []; // Stimmungszonen: Nebel/Licht weich verschieben
     this.animated = [];
     this.fireflyTotal = 0;
     this.shardTotal = 0;
@@ -51,13 +54,16 @@ export class Level {
   finishTerrain(rule = defaultColorRule(), tex = 'ground', texScale = 0.25) {
     const mesh = this.T.buildMesh(this.game.tex[tex], rule, texScale);
     this.root.add(mesh);
+    this.terrainMesh = mesh;
   }
 
-  water({ y = 0, size = 900, color = 0x3aa0e0, opacity = 0.78, x0, x1, z0, z1, cx = 0, cz = 0, r } = {}) {
+  // Wasser: fein genug unterteilt für sanfte Wellen (die Kollision bleibt flach)
+  water({ y = 0, size = 900, color = 0x3aa0e0, opacity = 0.78, x0, x1, z0, z1, cx = 0, cz = 0, r, waves = 0.12, foam = true } = {}) {
     let geo;
-    if (x0 != null) geo = new THREE.PlaneGeometry(x1 - x0, z1 - z0, 1, 1).translate((x0 + x1) / 2, -(z0 + z1) / 2, 0);
-    else if (r) geo = new THREE.CircleGeometry(r, 24).translate(cx, -cz, 0);
-    else geo = new THREE.PlaneGeometry(size, size, 1, 1);
+    const seg = (len) => Math.max(1, Math.min(80, Math.ceil(len / 8)));
+    if (x0 != null) geo = new THREE.PlaneGeometry(x1 - x0, z1 - z0, seg(x1 - x0), seg(z1 - z0)).translate((x0 + x1) / 2, -(z0 + z1) / 2, 0);
+    else if (r) geo = new THREE.RingGeometry(0.01, r, 32, Math.max(2, Math.ceil(r / 4))).translate(cx, -cz, 0);
+    else geo = new THREE.PlaneGeometry(size, size, seg(size), seg(size));
     geo.rotateX(-Math.PI / 2);
     // eigene Kopie, weil jede Wasserfläche eigenständig animiert wird
     const tex = this.game.tex.water.clone();
@@ -65,15 +71,73 @@ export class Level {
     const uvScale = 1 / 8;
     const uv = geo.attributes.uv, pos = geo.attributes.position;
     for (let i = 0; i < uv.count; i++) uv.setXY(i, pos.getX(i) * uvScale, pos.getZ(i) * uvScale);
-    const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({
+    const m = new THREE.Mesh(geo, waterMaterial(new THREE.MeshLambertMaterial({
       color, map: tex, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide,
-    }));
+    }), { amp: waves }));
     m.position.y = y;
     m.renderOrder = 2;
     this.root.add(m);
     this.waterMeshes.push({ mesh: m, tex });
-    this.world.addWater(x0 != null ? { y, x0, x1, z0, z1 } : r ? { y, cx, cz, r } : { y });
+    const region = x0 != null ? { y, x0, x1, z0, z1 } : r ? { y, cx, cz, r } : { y };
+    this.world.addWater(region);
+    if (foam) this.foamZones.push({ ...region, tint: 0 });
     return m;
+  }
+
+  // Schaumrand an einer Wasserlinie ohne Wasser-Kollision (z.B. Giftsumpf)
+  foam(region) {
+    this.foamZones.push({ tint: 0, ...region });
+  }
+
+  // Stimmungszone: Nebel, Licht und Himmel verschieben sich weich zu atmo.
+  // r = voller Effekt, fade = Übergangsbreite, cond = nur wenn cond() wahr ist.
+  moodZone(x, z, { r = 8, fade = 8, cond, atmo }) {
+    const zone = { x, z, r, fade, cond, atmo };
+    this.moodZones.push(zone);
+    return zone;
+  }
+
+  // Schaum-Attribut fürs Terrain berechnen (einmal beim Aufbau)
+  buildFoam() {
+    const mesh = this.terrainMesh;
+    if (!mesh || !this.foamZones.length) return;
+    const pos = mesh.geometry.attributes.position;
+    const shore = new Float32Array(pos.count * 3);
+    const { n, h: H } = this.T;
+    // Nur Punkte, an denen die Wasserlinie wirklich vorbeiläuft (ein Nachbar
+    // liegt auf der anderen Seite) – so bleibt der Schaum ein schmaler Saum.
+    const crosses = (i, y) => {
+      const ix = i % n, iz = (i - ix) / n, s = H[i] > y;
+      for (let dz = -1; dz <= 1; dz++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const jx = ix + dx, jz = iz + dz;
+          if (jx < 0 || jz < 0 || jx >= n || jz >= n) continue;
+          if (H[jz * n + jx] > y !== s) return true;
+        }
+      }
+      return false;
+    };
+    // Abstand eines Punkts zum Bereich einer Schaumzone (0 = drinnen)
+    const outside = (w, x, z) => {
+      if (w.x0 != null) return Math.hypot(Math.max(w.x0 - x, 0, x - w.x1), Math.max(w.z0 - z, 0, z - w.z1));
+      if (w.cx != null) return Math.max(0, Math.hypot(x - w.cx, z - w.cz) - w.r);
+      return 0;
+    };
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), h = pos.getY(i), z = pos.getZ(i);
+      // Wasserhöhe der nächsten Zone überall eintragen – sonst entstünde beim
+      // Interpolieren am Rand der Maske eine falsche "Wasserlinie"
+      let best = null, bd = Infinity;
+      for (const w of this.foamZones) {
+        const d = outside(w, x, z);
+        if (d < bd) { bd = d; best = w; }
+      }
+      shore[i * 3 + 1] = best.y;
+      shore[i * 3 + 2] = best.tint;
+      if (bd <= 2 && Math.abs(h - best.y) <= 1.5 && crosses(i, best.y)) shore[i * 3] = 1;
+    }
+    mesh.geometry.setAttribute('shore', new THREE.BufferAttribute(shore, 3));
+    foamMaterial(mesh.material);
   }
 
   // Himmelskuppel mit Farbverlauf + Wolken + Berg-Silhouetten
@@ -156,12 +220,14 @@ export class Level {
     const r = rng(seed ?? Math.floor(x * 131 + z * 71));
     const rot = r() * Math.PI * 2;
     const bark = 0x8a6440;
+    // Kronen wiegen sich im Wind, am Stamm weniger als oben
+    const sway = { wind: 1.3, windBase: y + 1.2 * s, windH: 4.5 * s };
     if (kind === 'pine') {
       this.add(G.cyl(0.25 * s, 0.4 * s, 2.2 * s, 6), M(x, y, z, rot), bark, 'bark', 0.8);
       const lc = C(leaf).multiplyScalar(0.75);
       for (let i = 0; i < 3; i++) {
         const cy = y + (1.6 + i * 1.6) * s, cr = (2.3 - i * 0.6) * s;
-        this.add(G.cone(cr, 2.6 * s, 7), M(x, cy, z, rot + i), lc, 'leaves', 0.5, { shade: 0.1, seed: i });
+        this.add(G.cone(cr, 2.6 * s, 7), M(x, cy, z, rot + i), lc, 'leaves', 0.5, { shade: 0.1, seed: i, ...sway });
       }
     } else if (kind === 'palm') {
       let px = x, pz = z, py = y;
@@ -175,7 +241,7 @@ export class Level {
       for (let i = 0; i < 7; i++) {
         const a = (i / 7) * Math.PI * 2;
         const leafGeo = G.box(0.9 * s, 0.1 * s, 3.8 * s).translate(0, 0, 1.9 * s);
-        this.add(leafGeo, M(px, py, pz, a, 1, 0.45), 0x46a83a, 'leaves', 0.6, { shade: 0.1 });
+        this.add(leafGeo, M(px, py, pz, a, 1, 0.45), 0x46a83a, 'leaves', 0.6, { shade: 0.1, wind: 1.3, windBase: py - 1.5 * s, windH: 1.5 * s });
       }
       this.add(G.sphere(0.5 * s, 6, 4), M(px, py - 0.2, pz), 0x6b4a2a, 'plain');
       if (collide) this.world.addCyl({ x, z, y, r: 0.4 * s, h: 7 * s, camBlock: false });
@@ -183,7 +249,7 @@ export class Level {
     } else if (kind === 'dead') {
       this.add(G.cyl(0.25 * s, 0.45 * s, 4 * s, 6), M(x, y, z, rot), 0x6a5a4a, 'bark', 0.8);
       for (let i = 0; i < 3; i++) {
-        this.add(G.cyl(0.08 * s, 0.16 * s, 1.8 * s, 5), M(x, y + (2 + i * 0.7) * s, z, rot + i * 2.1, 1, 0, 0.9), 0x6a5a4a, 'bark', 0.8);
+        this.add(G.cyl(0.08 * s, 0.16 * s, 1.8 * s, 5), M(x, y + (2 + i * 0.7) * s, z, rot + i * 2.1, 1, 0, 0.9), 0x6a5a4a, 'bark', 0.8, { wind: 0.35 });
       }
     } else {
       const th = (2 + r() * 0.8) * s;
@@ -192,7 +258,7 @@ export class Level {
       const blobs = [[0, th + 1.4, 0, 2.1], [0.9, th + 0.9, 0.4, 1.4], [-0.8, th + 1.0, -0.5, 1.5], [0.2, th + 2.4, -0.2, 1.4]];
       for (const [bx, by, bz, br] of blobs) {
         const c = lc.clone().multiplyScalar(0.85 + r() * 0.3);
-        this.add(G.blob(br * s, Math.floor(r() * 99)), M(x + bx * s, y + by * s, z + bz * s, rot), c, 'leaves', 0.5, { shade: 0.08, seed: Math.floor(r() * 99) });
+        this.add(G.blob(br * s, Math.floor(r() * 99)), M(x + bx * s, y + by * s, z + bz * s, rot), c, 'leaves', 0.5, { shade: 0.08, seed: Math.floor(r() * 99), ...sway });
       }
     }
     if (collide) this.world.addCyl({ x, z, y, r: 0.45 * s, h: 4 * s, camBlock: false });
@@ -203,7 +269,7 @@ export class Level {
     const r = rng(Math.floor(x * 17 + z * 29));
     for (let i = 0; i < 3; i++) {
       const c = C(color).multiplyScalar(0.85 + r() * 0.3);
-      this.add(G.blob((0.7 + r() * 0.4) * s, i), M(x + (r() - 0.5) * s, y + 0.4 * s, z + (r() - 0.5) * s, r() * 6, [1, 0.8, 1]), c, 'leaves', 0.7, { shade: 0.1 });
+      this.add(G.blob((0.7 + r() * 0.4) * s, i), M(x + (r() - 0.5) * s, y + 0.4 * s, z + (r() - 0.5) * s, r() * 6, [1, 0.8, 1]), c, 'leaves', 0.7, { shade: 0.1, wind: 0.4, windBase: y, windH: 1.2 * s });
     }
   }
 
@@ -219,10 +285,11 @@ export class Level {
     for (let i = 0; i < n; i++) {
       const a = r() * Math.PI * 2, d = Math.sqrt(r()) * rad;
       const fx = x + Math.cos(a) * d, fz = z + Math.sin(a) * d, fy = this.gy(fx, fz);
-      this.add(G.cyl(0.03, 0.03, 0.45, 3), M(fx, fy, fz), 0x3a8a2a, 'plain');
+      const sway = { wind: 1.1, windBase: fy, windH: 0.5 };
+      this.add(G.cyl(0.03, 0.03, 0.45, 3), M(fx, fy, fz), 0x3a8a2a, 'plain', 0.5, sway);
       const c = colors[Math.floor(r() * colors.length)];
-      this.add(G.sphere(0.16, 5, 3), M(fx, fy + 0.48, fz, 0, [1, 0.5, 1]), c, 'plain');
-      this.add(G.sphere(0.06, 4, 3), M(fx, fy + 0.55, fz), 0xffcc33, 'plain');
+      this.add(G.sphere(0.16, 5, 3), M(fx, fy + 0.48, fz, 0, [1, 0.5, 1]), c, 'plain', 0.5, sway);
+      this.add(G.sphere(0.06, 4, 3), M(fx, fy + 0.55, fz), 0xffcc33, 'plain', 0.5, sway);
     }
   }
 
@@ -232,7 +299,7 @@ export class Level {
       const a = r() * Math.PI * 2, d = Math.sqrt(r()) * rad;
       const gx = x + Math.cos(a) * d, gz = z + Math.sin(a) * d, gy = this.gy(gx, gz);
       for (let k = 0; k < 3; k++) {
-        this.add(G.cone(0.08, 0.6 + r() * 0.3, 3), M(gx + (r() - 0.5) * 0.3, gy - 0.05, gz + (r() - 0.5) * 0.3, r() * 6, 1, (r() - 0.5) * 0.5, (r() - 0.5) * 0.5), 0x4faa2f, 'plain');
+        this.add(G.cone(0.08, 0.6 + r() * 0.3, 3), M(gx + (r() - 0.5) * 0.3, gy - 0.05, gz + (r() - 0.5) * 0.3, r() * 6, 1, (r() - 0.5) * 0.5, (r() - 0.5) * 0.5), 0x4faa2f, 'plain', 0.5, { wind: 1.4, windBase: gy - 0.05, windH: 0.8 });
       }
     }
   }
@@ -282,9 +349,11 @@ export class Level {
 
   mushroomDeco(x, z, { h = 3, r = 2, color = 0xd84a3a, y, collide = true } = {}) {
     y ??= this.gy(x, z);
-    this.add(G.cyl(r * 0.28, r * 0.36, h, 9), M(x, y, z), 0xf3e6c8, 'plain', 0.5, { shade: 0.05 });
-    this.add(G.hemi(r, 12, 5), M(x, y + h - 0.1, z, 0, [1, 0.6, 1]), color, 'mushroom', null, { uvRepeat: 2 });
-    this.add(new THREE.CircleGeometry(r, 12).rotateX(Math.PI / 2), M(x, y + h - 0.1, z), 0xf0dcb0, 'plain');
+    // begehbare Pilze bleiben starr, Deko-Pilze wiegen sich leicht
+    const sway = collide ? {} : { wind: 0.5, windBase: y, windH: h + r };
+    this.add(G.cyl(r * 0.28, r * 0.36, h, 9), M(x, y, z), 0xf3e6c8, 'plain', 0.5, { shade: 0.05, ...sway });
+    this.add(G.hemi(r, 12, 5), M(x, y + h - 0.1, z, 0, [1, 0.6, 1]), color, 'mushroom', null, { uvRepeat: 2, ...sway });
+    this.add(new THREE.CircleGeometry(r, 12).rotateX(Math.PI / 2), M(x, y + h - 0.1, z), 0xf0dcb0, 'plain', 0.5, sway);
     if (collide) {
       this.world.addCyl({ x, z, y, r: r * 0.32, h });
       return this.world.addCyl({ x, z, y: y + h - 0.4, r: r * 0.95, h: 0.4 + r * 0.55 });
@@ -381,6 +450,15 @@ export class Level {
   cactus(x, z, o) { return this.spawn(new Cactus(this, x, z, o)); }
   portal(x, z, o) { return this.spawn(new Portal(this, x, z, o)); }
   trigger(x, z, o) { return this.spawn(new Trigger(this, x, o.y ?? this.groundTop(x, z), z, o)); }
+  // Klangzone (Höhle, Senke, Wrack): mehr Hall, optional dumpfer – weich ein- und ausgeblendet
+  soundZone(x, z, { r = 8, h = 6, y, reverb = 0.25, lowpass } = {}) {
+    const space = { reverb, lowpass };
+    return this.trigger(x, z, {
+      r, h, y, once: false, always: true,
+      onEnter: (g) => g.audio.setSpace(space),
+      onExit: (g) => { if (g.audio.space === space) g.audio.setSpace(null); },
+    });
+  }
   platform(o) { return this.spawn(new Platform(this, o)); }
   breakable(x, z, o) { return this.spawn(new Breakable(this, x, o.y ?? this.gy(x, z), z, o)); }
   poundSpot(x, z, o) { return this.spawn(new PoundSpot(this, x, z, o)); }
@@ -393,6 +471,7 @@ export class Level {
   // ---------- Fertigstellen ----------
   build() {
     this.batch.build(this.root);
+    this.buildFoam();
     if (this.ffShard && this.save.levelFireflies(this.id) >= this.fireflyTotal) this.spawnFireflyShard(false);
     const collected = this.save.data.berries[this.id] || [];
     this.berries = this.spawn(new BerryField(this, this.berryPos, collected));
@@ -419,6 +498,7 @@ export class Level {
       if (o.geometry) o.geometry.dispose();
       if (!o.material) return;
       for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+        forgetFxMaterial(m);
         if (m.userData.shared) continue;
         if (m.map && !sharedTex.has(m.map)) m.map.dispose();
         m.dispose();

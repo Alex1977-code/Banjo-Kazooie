@@ -6,6 +6,7 @@ export const DEFAULT_SETTINGS = {
   pixel: false,
   music: 0.6,
   sfx: 0.8,
+  ambience: 0.7,
   vibrate: true,
   invertY: false,
   camSpeed: 1,

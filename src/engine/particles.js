@@ -60,6 +60,14 @@ class Pool {
     p.s0 = o.s0 ?? 1; p.s1 = o.s1 ?? 0;
     p.r = o.r ?? 1; p.gg = o.gg ?? 1; p.b = o.b ?? 1;
     p.a0 = o.a ?? 1;
+    // Umgebungspartikel: wob = zufälliges Umherschweben, flick = Blinken (Hz),
+    // fadeIn = sanftes Einblenden (s)
+    p.wob = o.wob || 0;
+    p.flick = o.flick || 0;
+    p.fadeIn = o.fadeIn || 0;
+    p.ph = Math.random() * 6.28;
+    p.tag = o.tag ?? null; // wem der Partikel gehört (Umgebungseffekte zählen ihre eigenen)
+    return p;
   }
 
   update(dt, scale) {
@@ -71,6 +79,12 @@ class Pool {
         continue;
       }
       p.life -= dt;
+      if (p.wob) {
+        const k = p.wob * dt * 6;
+        p.vx += (Math.random() - 0.5) * k;
+        p.vy += (Math.random() - 0.5) * k * 0.6;
+        p.vz += (Math.random() - 0.5) * k;
+      }
       p.vy -= p.g * dt;
       const d = Math.exp(-p.drag * dt);
       p.vx *= d; p.vy *= d; p.vz *= d;
@@ -79,7 +93,10 @@ class Pool {
       this.pos[i * 3] = p.x; this.pos[i * 3 + 1] = p.y; this.pos[i * 3 + 2] = p.z;
       this.size[i] = p.life > 0 ? p.s0 + (p.s1 - p.s0) * t : 0;
       this.col[i * 4] = p.r; this.col[i * 4 + 1] = p.gg; this.col[i * 4 + 2] = p.b;
-      this.col[i * 4 + 3] = p.a0 * (1 - t * t);
+      let a = p.a0 * (1 - t * t);
+      if (p.fadeIn) a *= Math.min(1, (p.max - p.life) / p.fadeIn);
+      if (p.flick) a *= 0.2 + 0.8 * (0.5 + 0.5 * Math.sin((p.max - p.life) * p.flick * 6.28 + p.ph));
+      this.col[i * 4 + 3] = a;
     }
     this.geo.attributes.position.needsUpdate = true;
     this.geo.attributes.size.needsUpdate = true;
@@ -95,17 +112,20 @@ export class Particles {
   constructor(scene, tex) {
     this.spark = new Pool(scene, tex.spark, 220, true);
     this.puff = new Pool(scene, tex.puff, 160, false);
+    this.dot = new Pool(scene, tex.glow, 140, true); // runde Leuchtpunkte (Pollen, Sporen, Glühwürmchen)
   }
 
   update(dt, renderHeight) {
     const scale = renderHeight * 0.9;
     this.spark.update(dt, scale);
     this.puff.update(dt, scale);
+    this.dot.update(dt, scale);
   }
 
   clear() {
     this.spark.clear();
     this.puff.clear();
+    this.dot.clear();
   }
 
   // Vorgefertigte Effekte

@@ -7,6 +7,7 @@ import { TouchControls } from '../engine/touch.js';
 import { Audio } from '../engine/audio.js';
 import { CameraRig } from '../engine/camera.js';
 import { Particles } from '../engine/particles.js';
+import { FX, updateFx, setFxDetail } from '../engine/fx.js';
 import { Player } from './player.js';
 import { Save } from './save.js';
 import { Hud } from './hud.js';
@@ -15,6 +16,8 @@ import { Portraits } from './portraits.js';
 import { Level } from './level.js';
 import { BlobShadow } from './entities.js';
 import { Menus } from './menus.js';
+import { Mood } from './mood.js';
+import { Ambient } from './ambient.js';
 import { LEVELS } from '../levels/index.js';
 
 const $ = (s) => document.querySelector(s);
@@ -33,6 +36,9 @@ export class Game {
     this.portraits = new Portraits(this.renderer);
     this.particles = new Particles(this.renderer.scene, this.tex);
     this.player = new Player(this);
+    this.mood = new Mood(this);
+    this.ambient = new Ambient(this);
+    this.fxWind = 1;
     this.renderer.scene.add(this.player.model);
     this.camRig = new CameraRig(this.renderer.camera, null);
     this.level = null;
@@ -67,7 +73,9 @@ export class Game {
     const s = this.save.data.settings;
     this.renderer.setQuality(s.quality);
     this.renderer.setPixelated(s.pixel);
-    this.audio.setVolumes(s.music, s.sfx);
+    setFxDetail(s.quality !== 'n64'); // zweite Wasserebene, Glitzern, Schaummuster erst ab "retro"
+    this.audio.setVolumes(s.music, s.sfx, s.ambience);
+    this.audio.setLite(s.quality === 'n64');
     this.input.vibrate = s.vibrate;
     this.camRig.invertY = s.invertY;
   }
@@ -161,6 +169,7 @@ export class Game {
     this.timers.length = 0;
     this.tweens.length = 0;
     this.playerShadow = null;
+    this.ambient.setup({ def: {} });
     this.dying = false;
     this.falling = false;
     this.hud.setBoss(null);
@@ -182,6 +191,9 @@ export class Game {
     this.camRig.world = L.world;
     this.renderer.setAtmosphere(def.atmosphere(L, this));
     this.underwater = false;
+    this.audio.setWorld(def.reverb || def.id, def.ambience || { id: def.id });
+    this.setWorldFx(L);
+    this.ambient.setup(L);
     this.hud.setBoss(null);
     this.playerShadow = new BlobShadow(L, 1.5);
 
@@ -362,6 +374,7 @@ export class Game {
     const steps = Math.min(4, Math.ceil(dt / (1 / 60) - 0.01));
     const h = dt / steps;
     for (let i = 0; i < steps; i++) this.update(h, i === 0);
+    updateFx(dt);
     this.particles.update(dt, this.renderer.internalHeight);
     this.hud.update(dt);
     this.menus.render?.(dt);
@@ -421,6 +434,9 @@ export class Game {
     const camInput = { camX: input.camX * cs, camY: input.camY * inv * cs, camDragX: input.camDragX * cs, camDragY: input.camDragY * inv * cs };
     this.camRig.update(dt, this.player, camInput);
     this.playerShadow?.update(this.player.pos.x, this.player.pos.y, this.player.pos.z);
+    if (first) this.updateListener(this.player.pos);
+    this.mood.update(dt);
+    this.ambient.update(dt);
 
     // Unter Wasser: bläulicher, dichter Nebel
     if (L.def.underwater != null) {
@@ -428,6 +444,7 @@ export class Game {
       const under = c.y < L.world.waterAt(c.x, c.z) - 0.05;
       if (under !== this.underwater) {
         this.underwater = under;
+        this.audio.setUnderwater(under); // Musik und Effekte klingen unter Wasser dumpf
         const uw = L.def.underwater;
         this.renderer.setAtmosphere(under ? { sky: uw, fog: uw, fogNear: 1, fogFar: 38, hemi: 0x9ad8ff, ground: 0x1a4a6a, sunIntensity: 1.2, hemiIntensity: 1.6 } : L.def.atmosphere(L, this));
       }
@@ -452,7 +469,21 @@ export class Game {
     const c = this.level.def.titleCam || { x: 0, y: 14, z: 0, r: 50, h: 18 };
     cam.position.set(c.x + Math.sin(t) * c.r, c.y + c.h, c.z + Math.cos(t) * c.r);
     cam.lookAt(c.x, c.y, c.z);
+    this.updateListener(cam.position);
     this.level.update(dt);
+  }
+
+  // Wind und Stimmungszonen der Welt
+  setWorldFx(L) {
+    this.fxWind = FX.wind.value = L.def.wind ?? 1;
+    this.mood.reset(L);
+  }
+
+  // Richtungshören: links/rechts relativ zur Kamera, Entfernung zum Spieler
+  updateListener(focus) {
+    const cam = this.renderer.camera;
+    const e = cam.matrixWorld.elements;
+    this.audio.setListener(cam.position, e[0], e[2], focus);
   }
 
   // Hub im Hintergrund des Titelbildschirms laden
@@ -465,6 +496,8 @@ export class Game {
     L.build();
     this.camRig.world = L.world;
     this.renderer.setAtmosphere(def.atmosphere(L, this));
+    this.audio.setWorld(def.reverb || def.id, def.ambience || { id: def.id });
+    this.setWorldFx(L);
     this.player.model.visible = false;
     this.player.pos.set(9999, -500, 9999);
   }

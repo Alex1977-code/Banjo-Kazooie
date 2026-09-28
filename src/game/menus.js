@@ -237,6 +237,7 @@ export class Menus {
       this.option('Pixel-Look', () => s.pixel, onoff, set('pixel')),
       this.option('Musik', () => s.music, vol, set('music')),
       this.option('Effekte', () => s.sfx, vol, set('sfx')),
+      this.option('Umgebung', () => s.ambience, vol, set('ambience')),
       this.option('Vibration', () => s.vibrate, onoff, set('vibrate')),
       this.option('Kamera hoch/runter umkehren', () => s.invertY, onoff, set('invertY')),
       this.option('Kamera-Tempo', () => s.camSpeed, [[0.5, 'Langsam'], [0.75, 'Gemütlich'], [1, 'Normal'], [1.5, 'Schnell']], set('camSpeed')),

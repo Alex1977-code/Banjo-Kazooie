@@ -4,11 +4,12 @@ import { G, M, mat, part } from '../engine/geo.js';
 import { defaultColorRule } from '../game/terrain.js';
 import { makeTilo, makeToadKing, makeShard, makeSnail } from '../game/models.js';
 import { fbm, rng } from '../engine/util.js';
+import { TOTAL_SHARDS } from './index.js';
 
 const SUN_HILL = { x: 0, z: -46, r: 11, h: 10 };
 const PILLAR = { x: -28, z: -20 };
 const SLAB = { x: 24, z: -24 };
-const TOTAL_SHARDS = 14;
+const FIRE = { x: 9.5, z: 13 }; // Opa Tilos Lagerfeuer
 
 function gloomColors(L) {
   const g = L.game;
@@ -29,6 +30,17 @@ export default {
   name: 'Wurzelhügel',
   subtitle: 'Brunos Zuhause',
   music: 'hub',
+  reverb: 'hub', // mittlerer Hall
+  // Vögel, leichter Wind – und der Wasserfall ist aus seiner Richtung zu hören
+  ambience: {
+    id: 'hub',
+    spots: [
+      { x: -57.5, y: 1, z: 8, loop: 'falls', vol: 0.45, ref: 8, range: 55 },
+      { x: FIRE.x, y: 0.6, z: FIRE.z, sound: 'crackle', every: [0.08, 0.45], ref: 3, range: 20 },
+    ],
+  },
+  wind: 1,
+  ambientFx: ['pollen', 'butterflies'],
   titleCam: { x: 0, y: 6, z: -8, r: 58, h: 22 },
 
   atmosphere(L) {
@@ -177,6 +189,10 @@ export default {
     L.tilo = L.npc(makeTilo(), 6, 11, { who: 'tilo', facing: -2.2, talk: (g) => tiloTalk(L, g) });
 
     // ---------- Lotti Langsam, die Schnecken-Händlerin ----------
+    campfire(L);
+    // Stimmung: warm am Lagerfeuer, düster vor dem Tor zum Krötenturm
+    L.moodZone(FIRE.x, FIRE.z, { r: 4, fade: 7, atmo: { fog: 0xf2d6b0, hemi: 0xffe2b8, sun: 0xffd49a, skyTint: 0xfff0dc, hemiIntensity: 1.8 } });
+    L.moodZone(0, -73, { r: 8, fade: 14, atmo: { fog: 0x9a8aa8, hemi: 0xc8b8e8, sun: 0xd8c0ff, skyTint: 0xd0c4e4, sunIntensity: 1.4, hemiIntensity: 1.4 } });
     const lotti = L.npc(makeSnail(), -12, 7, { who: 'lotti', facing: 0.9, prompt: 'Handeln', talk: (g) => lottiTalk(L, g) });
     L.sign(-9, 3, 0.9, 'Lottis Laden', 'Extra-Herzen');
     void lotti;
@@ -316,6 +332,48 @@ async function tiloTalk(L, g) {
 
 // Lotti tauscht Beeren gegen Extra-Herzen
 const HEART_PRICES = [40, 70, 100];
+// Kleines Lagerfeuer mit Steinring, Holzscheiten, flackernden Flammen und Funken
+function campfire(L) {
+  const { x, z } = FIRE, y = L.gy(x, z);
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    L.add(G.rock(0.32, 20 + i), M(x + Math.cos(a) * 0.95, y + 0.05, z + Math.sin(a) * 0.95), 0x8a8478, 'rock', 0.5, { flat: true, shade: 0.08 });
+  }
+  for (let i = 0; i < 3; i++) {
+    L.add(new THREE.CylinderGeometry(0.11, 0.13, 1.3, 6), M(x, y + 0.16 + i * 0.06, z, i * 1.05, 1, 0, Math.PI / 2), 0x6a4a2a, 'bark', 0.8);
+  }
+  L.world.addCyl({ x, z, y: y - 0.2, r: 0.85, h: 0.8, camBlock: false, hazard: 1 });
+  const flame = new THREE.Group();
+  const outer = new THREE.MeshBasicMaterial({ color: 0xff7a1a, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending });
+  const inner = new THREE.MeshBasicMaterial({ color: 0xffe07a, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending });
+  const cones = [];
+  for (let i = 0; i < 3; i++) {
+    const c = new THREE.Mesh(G.cone(0.32 - i * 0.05, 1.1 - i * 0.15, 6), i ? inner : outer);
+    c.position.set(Math.cos(i * 2.1) * 0.12, 0, Math.sin(i * 2.1) * 0.12);
+    flame.add(c);
+    cones.push(c);
+  }
+  flame.position.set(x, y + 0.2, z);
+  L.root.add(flame);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: L.game.tex.glow, color: 0xffa040, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
+  glow.position.set(x, y + 0.8, z);
+  glow.scale.setScalar(3.2);
+  L.root.add(glow);
+  L.animated.push((dt, t) => {
+    cones.forEach((c, i) => {
+      c.scale.set(1, 0.85 + Math.sin(t * (9 + i * 3) + i) * 0.15 + Math.random() * 0.08, 1);
+      c.rotation.y = t * (1 + i);
+    });
+    glow.material.opacity = 0.45 + Math.sin(t * 11) * 0.05 + Math.random() * 0.06;
+    const p = L.game.player.pos;
+    if (Math.hypot(p.x - x, p.z - z) < 40 && Math.random() < dt * 7) {
+      L.game.particles.spark.spawn({ x: x + (Math.random() - 0.5) * 0.5, y: y + 0.8, z: z + (Math.random() - 0.5) * 0.5,
+        vx: (Math.random() - 0.5) * 0.6, vy: 1.5 + Math.random() * 1.5, vz: (Math.random() - 0.5) * 0.6, wob: 0.8, drag: 0.8,
+        life: 0.8 + Math.random() * 0.8, s0: 0.25, s1: 0, r: 1, gg: 0.6, b: 0.2 });
+    }
+  });
+}
+
 async function lottiTalk(L, g) {
   const s = g.save;
   if (!L.flag('lotti')) {
@@ -482,5 +540,5 @@ async function ending(L, g) {
   });
   const s = g.save;
   const t = Math.round(s.data.playTime / 60);
-  g.menus.openCredits({ shards: `${s.totalShards()} / 14`, berries: s.totalBerries(), time: `${Math.floor(t / 60)} h ${t % 60} min` });
+  g.menus.openCredits({ shards: `${s.totalShards()} / ${TOTAL_SHARDS}`, berries: s.totalBerries(), time: `${Math.floor(t / 60)} h ${t % 60} min` });
 }
