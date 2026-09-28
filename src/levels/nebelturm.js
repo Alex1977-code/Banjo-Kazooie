@@ -163,8 +163,6 @@ export default {
   },
 };
 
-// ---------- Goldmünze (Wurfgeschoss) ----------
-const GRAV = 16;
 // Königlicher Wimpel an den Zinnen: je weiter vom Mast, desto stärker flattert er
 function pennant(L, x, z, a) {
   const top = 3.4;
@@ -179,6 +177,8 @@ function pennant(L, x, z, a) {
   }
 }
 
+// ---------- Goldmünze (Wurfgeschoss) ----------
+const GRAV = 16;
 class Coin extends Entity {
   constructor(L, x, y, z, tx, tz, flight) {
     super(L, x, y, z);

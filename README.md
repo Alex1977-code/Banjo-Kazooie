@@ -21,11 +21,11 @@ Blechkäfern zu finden und dem Krötenkönig in seinem Turm das Handwerk zu lege
 | Welt | Was dich erwartet |
 |---|---|
 | **Wurzelhügel** (Hub) | Brunos Dachsbau, Opa Tilo erklärt alles, Lotti Langsam tauscht Beeren gegen Extra-Herzen, Lernsteine für Hochsprung & Stampfer, Felsturm und rissige Steinplatte. Tore zu allen Welten. |
-| **Pilzwald** (1 Splitter) | Pauli Pilz gibt Tipps, Opa Eiche mit Wendel-Baumpilzen bis zur Krone, Hüpfpilze zur schwebenden Insel, Giftsumpf mit Seerosen und Wölkchen, Käferlichtung voller Blechkäfer, verlorenes Igelkind Stupsi. |
+| **Pilzwald** (1 Splitter) | Pauli Pilz gibt Tipps, Opa Eiche mit Wendel-Baumpilzen bis zur Krone, Hüpfpilze zur schwebenden Insel, Giftsumpf mit Seerosen und Wölkchen, Käferlichtung voller Blechkäfer, verlorenes Igelkind Stupsi und Boss Fürst Fliegenpilz im Hexenring (Sporenwellen, Sporenregen). |
 | **Muschelbucht** (4 Splitter) | Leuchtturm mit Wendeltreppe, Tauchgang zum Schiffswrack, Schatzsuche mit Käpt'n Barnabas, Kaktus-Banditen, Boss Käpt'n Knack, schwimmende Fässer. |
 | **Krötenturm** (10 Splitter) | Aufstieg über die Außentreppe, Wölkchen-Flug zur Bonusinsel und Endkampf gegen König Krötus in drei Phasen (Goldmünzen, Bauchplatscher, Blechkäfer). |
 
-Insgesamt gibt es **14 Sonnensplitter**, über **180 Beeren**, **10 Glühwürmchen** (alle fünf einer
+Insgesamt gibt es **15 Sonnensplitter**, fast **200 Beeren**, **10 Glühwürmchen** (alle fünf einer
 Welt ergeben einen Splitter) und Extra-Herzen für alle Beeren einer Welt.
 
 ## Spielen

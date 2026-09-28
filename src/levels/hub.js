@@ -4,12 +4,12 @@ import { G, M, mat, part } from '../engine/geo.js';
 import { defaultColorRule } from '../game/terrain.js';
 import { makeTilo, makeToadKing, makeShard, makeSnail } from '../game/models.js';
 import { fbm, rng } from '../engine/util.js';
+import { TOTAL_SHARDS } from './index.js';
 
 const SUN_HILL = { x: 0, z: -46, r: 11, h: 10 };
 const PILLAR = { x: -28, z: -20 };
 const SLAB = { x: 24, z: -24 };
 const FIRE = { x: 9.5, z: 13 }; // Opa Tilos Lagerfeuer
-const TOTAL_SHARDS = 14;
 
 function gloomColors(L) {
   const g = L.game;
@@ -540,5 +540,5 @@ async function ending(L, g) {
   });
   const s = g.save;
   const t = Math.round(s.data.playTime / 60);
-  g.menus.openCredits({ shards: `${s.totalShards()} / 14`, berries: s.totalBerries(), time: `${Math.floor(t / 60)} h ${t % 60} min` });
+  g.menus.openCredits({ shards: `${s.totalShards()} / ${TOTAL_SHARDS}`, berries: s.totalBerries(), time: `${Math.floor(t / 60)} h ${t % 60} min` });
 }

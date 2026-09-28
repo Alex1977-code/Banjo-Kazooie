@@ -850,3 +850,64 @@ export function makeCloud() {
   root.userData.rig = { star };
   return root;
 }
+
+// ---------------- Fürst Fliegenpilz (Boss im Pilzwald) ----------------
+// Roter Hut mit weißen Tupfen, grimmiger Schnurrbart und eine kleine Krone,
+// in der ein Sonnensplitter funkelt. Maßstab 1 ≈ 2,3 Einheiten hoch.
+export function makeFliegenpilz() {
+  const root = new THREE.Group();
+  const white = mat(0xf4efe4), red = mat(0xd8262a), dot = mat(0xfff8ec), dark = mat(0x3a2418);
+  const glove = mat(0x6a3a8a), gold = mat(0xe8b830, { emissive: 0x3a2800 });
+  const body = pivot(root, 0, 0, 0);
+  const feet = [];
+  for (const s of [-1, 1]) {
+    const f = pivot(body, s * 0.34, 0, 0.05);
+    part(f, G.sphere(0.27, 10, 6), mat(0x8a5a3a), 0, 0.1, 0.08, 0, 0, 0, [1, 0.6, 1.35]);
+    feet.push(f);
+  }
+  // Stiel als Körper, unten bauchig, mit Manschette unter dem Hut
+  part(body, G.sphere(0.64, 14, 10), white, 0, 0.58, 0, 0, 0, 0, [1, 0.95, 0.95]);
+  part(body, G.cyl(0.44, 0.58, 1.05, 14), white, 0, 0.6, 0);
+  part(body, G.torus(0.47, 0.09, 4, 16), dot, 0, 1.5, 0, Math.PI / 2, 0, 0);
+  // Gesicht: böse Augen, buschige Brauen, Schnurrbart
+  const brows = [];
+  for (const s of [-1, 1]) {
+    eye(body, s * 0.17, 1.12, 0.45, 0.13, -s * 0.3);
+    brows.push(part(body, G.box(0.28, 0.07, 0.08), dark, s * 0.18, 1.3, 0.49, 0, 0, s * 0.35));
+    part(body, cap(0.07, 0.28), dark, s * 0.17, 0.9, 0.53, 0, 0, s * (Math.PI / 2 - 0.4));
+    part(body, G.sphere(0.075, 6, 4), dark, s * 0.33, 0.83, 0.5);
+  }
+  part(body, G.sphere(0.1, 8, 6), mat(0xe8a0a0), 0, 0.99, 0.55);
+  part(body, G.torus(0.1, 0.022, 3, 8, Math.PI), dark, 0, 0.74, 0.55);
+  // Ärmchen mit lila Handschuhen
+  const arms = [];
+  for (const s of [-1, 1]) {
+    const a = pivot(body, s * 0.54, 0.95, 0);
+    part(a, cap(0.08, 0.3), white, s * 0.1, -0.2, 0, 0, 0, s * 0.5);
+    part(a, G.sphere(0.13, 8, 6), glove, s * 0.22, -0.4, 0.02);
+    arms.push(a);
+  }
+  // Hut (eigenes Gelenk, damit er nicken und schlaff hängen kann)
+  const R = 1.25, H = 0.62;
+  const hat = pivot(body, 0, 1.55, 0);
+  part(hat, G.hemi(R, 18, 8), red, 0, 0, 0, 0, 0, 0, [1, H, 1]);
+  part(hat, new THREE.CircleGeometry(R, 18).rotateX(Math.PI / 2), mat(0xf0e2c8), 0, 0.001, 0);
+  // weiße Tupfen, flach auf die Hutoberfläche gelegt
+  const up = new THREE.Vector3(0, 1, 0), n = new THREE.Vector3();
+  for (let i = 0; i < 16; i++) {
+    const phi = 0.28 + (i / 15) * 0.95, th = i * 2.4;
+    const sx = Math.sin(phi) * Math.cos(th), sy = Math.cos(phi), sz = Math.sin(phi) * Math.sin(th);
+    const m = part(hat, G.sphere(0.2 - phi * 0.05, 8, 5), dot, sx * R * 1.01, sy * R * H * 1.01, sz * R * 1.01, 0, 0, 0, [1, 0.3, 1]);
+    m.quaternion.setFromUnitVectors(up, n.set(sx / R, sy / (R * H), sz / R).normalize());
+  }
+  // Krone mit funkelndem Sonnensplitter
+  const crown = pivot(hat, 0, R * H - 0.04, 0);
+  part(crown, G.cyl(0.24, 0.28, 0.16, 10), gold, 0, 0, 0);
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2;
+    part(crown, G.cone(0.07, 0.18, 4), gold, Math.cos(a) * 0.22, 0.16, Math.sin(a) * 0.22);
+  }
+  const jewel = part(crown, new THREE.OctahedronGeometry(0.17), mat(0xffe27a, { emissive: 0xb08000 }), 0, 0.36, 0, 0, 0, 0, [1, 1.4, 1]);
+  root.userData.rig = { body, hat, crown, jewel, brows, feet, armL: arms[0], armR: arms[1] };
+  return root;
+}

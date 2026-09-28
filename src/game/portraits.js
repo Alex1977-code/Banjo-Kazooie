@@ -1,6 +1,6 @@
 // Rendert kleine Portraits der Figuren (für die Textboxen) direkt aus den 3D-Modellen.
 import * as THREE from 'three';
-import { makeBruno, makeKiki, makeTilo, makeToadKing, makeHedgehog, makeCaptain, makeCrab, makeLernstein, makePilz, makeSnail } from './models.js';
+import { makeBruno, makeKiki, makeTilo, makeToadKing, makeHedgehog, makeCaptain, makeCrab, makeLernstein, makePilz, makeSnail, makeFliegenpilz } from './models.js';
 
 const CONF = {
   bruno: { make: makeBruno, y: 1.75, dist: 2.2, bg: 0x6aa7e8 },
@@ -8,6 +8,7 @@ const CONF = {
   tilo: { make: makeTilo, y: 1.95, dist: 2.3, bg: 0xa8e08a },
   koenig: { make: makeToadKing, y: 2.05, dist: 3.1, bg: 0x6a4f9a },
   pilz: { make: makePilz, y: 1.45, dist: 2.3, bg: 0xb8f0e8 },
+  fuerst: { make: makeFliegenpilz, y: 1.35, dist: 3.2, bg: 0xf0c8d8 },
   lotti: { make: makeSnail, y: 1.25, dist: 2.1, bg: 0xf0c8ff },
   igel: { make: () => makeHedgehog(1, true), y: 0.75, dist: 2.1, bg: 0xf0c890 },
   stupsi: { make: () => makeHedgehog(0.6), y: 0.45, dist: 1.4, bg: 0xfff0a0 },

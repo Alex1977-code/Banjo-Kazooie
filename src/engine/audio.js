@@ -133,6 +133,17 @@ const SONGS = {
       ['drum', drums('k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2'), 0.45],
     ],
   }),
+  // Bosskampf im Pilzwald: grantig-hüpfend in d-Moll
+  pilzboss: () => ({
+    bpm: 138, swing: 0.1,
+    tracks: [
+      ['lead', melody(`D5:2 F5:2 A5:2 F5:2 G#5:2 A5:2 .:4  D5:2 F5:2 A5:2 C6:2 A5:4 .:4
+        Bb4:2 D5:2 F5:2 D5:2 E5:2 F5:2 .:4  C#5:2 E5:2 G5:2 E5:2 A5:6 .:2`), 0.28],
+      ['tuba', accomp('Dm Dm Bb A', 'oompah'), 0.55],
+      ['marimba', accomp('Dm Dm Bb A', 'arp'), 0.14],
+      ['drum', drums('k:2 c:2 s:2 c:2 k:2 k:2 s:2 c:2'), 0.4],
+    ],
+  }),
   title: () => ({
     bpm: 96, swing: 0.15,
     tracks: [
@@ -170,6 +181,7 @@ const VOICES = {
   tilo: { base: 200, type: 'triangle', spread: 0.15, formant: 1000 },
   koenig: { base: 105, type: 'sawtooth', spread: 0.35, formant: 600 },
   pilz: { base: 520, type: 'square', spread: 0.25, formant: 2000 },
+  fuerst: { base: 125, type: 'sawtooth', spread: 0.3, formant: 750 },
   lotti: { base: 380, type: 'triangle', spread: 0.3, formant: 1600 },
   igel: { base: 420, type: 'square', spread: 0.25, formant: 1800 },
   stupsi: { base: 700, type: 'square', spread: 0.3, formant: 2600 },
@@ -675,6 +687,18 @@ export class Audio {
         // klimpernde Sporen
         this.osc('sine', 3600, 3400, t, 0.18, 0.03, d);
         this.osc('sine', 4300, 4100, t + 0.03, 0.14, 0.02, d);
+        break;
+      case 'grumble': {
+        // Fürst Fliegenpilz holt Luft und grummelt
+        const o = this.osc('sawtooth', 115, 80, t, 0.6, 0.2, d, { filter: { f: 600 }, q: 3, curve: 'lin', attack: 0.05 });
+        this.vibrato(o, t, 0.6, 14, 12);
+        this.noise(t, 0.5, 0.08, d, { f: 400, q: 1.5, attack: 0.1 });
+        break;
+      }
+      case 'spores':
+        // Sporenwolke pufft aus dem Hut
+        this.noise(t, 0.5, 0.25, d, { f: 900, f1: 300, q: 0.8, attack: 0.02 });
+        this.osc('sine', 220, 90, t, 0.3, 0.12, d);
         break;
       case 'grimmAlert':
         this.osc('square', 500, 900, t, 0.12, 0.06, d, { filter: { f: 1800 } });
