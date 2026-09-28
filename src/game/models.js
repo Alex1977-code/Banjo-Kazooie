@@ -911,3 +911,164 @@ export function makeFliegenpilz() {
   root.userData.rig = { body, hat, crown, jewel, brows, feet, armL: arms[0], armR: arms[1] };
   return root;
 }
+
+// ---------------- Goldfeder (Bonus-Sammelobjekt) ----------------
+export function makeFeather() {
+  const root = new THREE.Group();
+  const gold = mat(0xffd24a, { emissive: 0x6a4a00 });
+  const body = pivot(root, 0, 0, 0);
+  // Fahne der Feder: flacher, geschwungener Körper aus zwei Kegeln, Kiel in der Mitte
+  part(body, G.sphere(0.34, 10, 6), gold, 0, 0.55, 0, 0, 0, 0.25, [0.45, 1.25, 0.08]);
+  part(body, G.cyl(0.025, 0.035, 1.3, 5), mat(0xfff0b0, { emissive: 0x6a5a20 }), 0.04, 0, 0, 0, 0, 0.12);
+  for (let i = 0; i < 4; i++) part(body, G.box(0.18, 0.03, 0.02), mat(0xc89a20), 0.1 - i * 0.02, 0.25 + i * 0.18, 0.03, 0, 0, 0.6);
+  root.userData.rig = { body };
+  return root;
+}
+
+// ---------------- Startfahne fürs Zeitrennen ----------------
+let checkerTex = null;
+function checkerTexture() {
+  if (checkerTex) return checkerTex;
+  const c = document.createElement('canvas');
+  c.width = c.height = 32;
+  const ctx = c.getContext('2d');
+  for (let y = 0; y < 4; y++) {
+    for (let x = 0; x < 4; x++) {
+      ctx.fillStyle = (x + y) % 2 ? '#1a1a1a' : '#f4f4f4';
+      ctx.fillRect(x * 8, y * 8, 8, 8);
+    }
+  }
+  checkerTex = new THREE.CanvasTexture(c);
+  checkerTex.colorSpace = THREE.SRGBColorSpace;
+  checkerTex.magFilter = THREE.NearestFilter;
+  return checkerTex;
+}
+
+export function makeRaceFlag() {
+  const root = new THREE.Group();
+  part(root, G.cyl(0.07, 0.09, 2.6, 6), mat(0xd8d0c0), 0, 0, 0);
+  part(root, G.sphere(0.12, 8, 6), mat(0xffd24a, { emissive: 0x5a3a00 }), 0, 2.65, 0);
+  const flag = pivot(root, 0, 2.3, 0);
+  part(flag, new THREE.PlaneGeometry(1.1, 0.7).translate(0.55, -0.3, 0), mat(0xffffff, { map: checkerTexture(), side: THREE.DoubleSide }), 0, 0, 0);
+  // kleine Stoppuhr am Mast
+  part(root, G.cyl(0.22, 0.22, 0.1, 12), mat(0xe0e0e8), 0, 1.4, 0.1, Math.PI / 2, 0, 0);
+  part(root, G.cyl(0.18, 0.18, 0.11, 12), mat(0xfaf6e8), 0, 1.4, 0.12, Math.PI / 2, 0, 0);
+  part(root, G.box(0.02, 0.14, 0.02), mat(0x222222), 0, 1.45, 0.19);
+  root.userData.rig = { flag };
+  return root;
+}
+
+// ---------------- Pinguin Pippo (Frostgipfel, Rennleiter) ----------------
+export function makePenguin() {
+  const root = new THREE.Group();
+  const black = mat(0x22283a), white = mat(0xf4f6fa), orange = mat(0xf29a2a);
+  const body = pivot(root, 0, 0, 0);
+  for (const s of [-1, 1]) part(body, G.sphere(0.16, 8, 5), orange, s * 0.14, 0.04, 0.1, 0, 0, 0, [1, 0.35, 1.6]);
+  part(body, G.sphere(0.46, 14, 10), black, 0, 0.6, 0, 0, 0, 0, [1, 1.25, 0.95]);
+  part(body, G.sphere(0.4, 12, 8), white, 0, 0.55, 0.2, 0, 0, 0, [0.82, 1.08, 0.7]);
+  const head = pivot(body, 0, 1.12, 0);
+  part(head, G.sphere(0.33, 12, 10), black, 0, 0, 0);
+  for (const s of [-1, 1]) {
+    part(head, G.sphere(0.12, 8, 6), white, s * 0.12, 0.03, 0.24, 0, 0, 0, [1, 1.2, 0.6]);
+    eye(head, s * 0.12, 0.04, 0.3, 0.06, -s * 0.2);
+  }
+  part(head, G.cone(0.09, 0.22, 6), orange, 0, -0.07, 0.3, Math.PI / 2, 0, 0);
+  // blau-weiße Wollmütze mit Bommel und Schal
+  part(head, G.hemi(0.34, 12, 6), mat(0x3a7ad8), 0, 0.1, 0, 0, 0, 0, [1, 0.9, 1]);
+  part(head, G.torus(0.31, 0.06, 4, 14), mat(0xf4f6fa), 0, 0.12, 0, Math.PI / 2, 0, 0);
+  part(head, G.sphere(0.1, 8, 6), mat(0xf4f6fa), 0, 0.46, 0);
+  part(body, G.torus(0.3, 0.08, 5, 14), mat(0x3a7ad8), 0, 0.92, 0, Math.PI / 2, 0, 0);
+  // Stoppuhr um den Hals
+  part(body, G.cyl(0.1, 0.1, 0.05, 10), mat(0xe8c040, { emissive: 0x3a2800 }), 0, 0.72, 0.42, Math.PI / 2, 0, 0);
+  const arms = [];
+  for (const s of [-1, 1]) {
+    const a = pivot(body, s * 0.42, 0.85, 0);
+    part(a, G.sphere(0.13, 8, 6), black, s * 0.05, -0.28, 0, 0, 0, 0, [0.5, 1.6, 0.8]);
+    arms.push(a);
+  }
+  root.userData.rig = { body, head, armL: arms[0], armR: arms[1] };
+  return root;
+}
+
+// ---------------- Schneemann Schnuppi (Nase, Hut, Schal einzeln ein-/ausblendbar) ----------------
+export function makeSnowman() {
+  const root = new THREE.Group();
+  const snow = mat(0xf6f8ff), coal = mat(0x2a2a30);
+  const body = pivot(root, 0, 0, 0);
+  part(body, G.sphere(0.75, 14, 10), snow, 0, 0.62, 0);
+  part(body, G.sphere(0.55, 14, 10), snow, 0, 1.55, 0);
+  for (let i = 0; i < 3; i++) part(body, G.sphere(0.06, 6, 4), coal, 0, 1.3 + i * 0.2, 0.53 - Math.abs(i - 1) * 0.02);
+  const head = pivot(body, 0, 2.28, 0);
+  part(head, G.sphere(0.4, 12, 10), snow, 0, 0, 0);
+  for (const s of [-1, 1]) part(head, G.sphere(0.055, 6, 4), coal, s * 0.14, 0.08, 0.36);
+  for (let i = 0; i < 5; i++) part(head, G.sphere(0.035, 5, 3), coal, (i - 2) * 0.07, -0.13 - Math.abs(i - 2) * -0.02, 0.37);
+  const nose = part(head, G.cone(0.07, 0.4, 6), mat(0xf07a1a), 0, -0.01, 0.38, Math.PI / 2, 0, 0);
+  const hat = pivot(head, 0, 0.3, 0);
+  part(hat, G.cyl(0.42, 0.42, 0.05, 14), coal, 0, 0, 0);
+  part(hat, G.cyl(0.26, 0.28, 0.45, 12), coal, 0, 0.03, 0);
+  part(hat, G.cyl(0.285, 0.285, 0.09, 12), mat(0xd83a3a), 0, 0.08, 0);
+  const scarf = pivot(body, 0, 1.98, 0);
+  part(scarf, G.torus(0.36, 0.1, 5, 14), mat(0x2aa04a), 0, 0, 0, Math.PI / 2, 0, 0);
+  part(scarf, G.box(0.18, 0.5, 0.06), mat(0x2aa04a), 0.2, -0.3, 0.32, 0, 0, -0.2);
+  const arms = [];
+  for (const s of [-1, 1]) {
+    const a = pivot(body, s * 0.5, 1.6, 0);
+    part(a, G.cyl(0.03, 0.04, 0.8, 4), mat(0x6a4a2a), s * 0.35, 0.1, 0, 0, 0, -s * 1.1);
+    arms.push(a);
+  }
+  root.userData.rig = { body, head, nose, hat, scarf, armL: arms[0], armR: arms[1] };
+  return root;
+}
+
+// ---------------- Bibber, der Schneeball-Yeti (Boss) ----------------
+export function makeYeti() {
+  const root = new THREE.Group();
+  const fur = mat(0xf2f4fa), face = mat(0x8ab8e8), dark = mat(0x2a3448), horn = mat(0xd8c8a8);
+  const body = pivot(root, 0, 0, 0);
+  const legs = [];
+  for (const s of [-1, 1]) {
+    const l = pivot(body, s * 0.45, 0.8, 0);
+    part(l, G.sphere(0.36, 10, 8), fur, 0, -0.3, 0, 0, 0, 0, [1, 1.3, 1]);
+    part(l, G.sphere(0.38, 10, 6), face, 0, -0.72, 0.18, 0, 0, 0, [1, 0.45, 1.5]);
+    legs.push(l);
+  }
+  // zottiger Körper: runder Bauch, Fellbüschel an Schultern und Hüfte
+  part(body, G.sphere(1.0, 16, 12), fur, 0, 1.55, 0, 0, 0, 0, [1.05, 1.15, 0.92]);
+  part(body, G.sphere(0.62, 12, 10), mat(0xdde6f4), 0, 1.4, 0.45, 0, 0, 0, [1, 1.1, 0.7]);
+  for (const [x, y, z, r] of [[-0.8, 2.25, 0, 0.38], [0.8, 2.25, 0, 0.38], [-0.7, 0.85, 0.2, 0.3], [0.7, 0.85, 0.2, 0.3], [0, 2.4, -0.4, 0.4]]) {
+    part(body, G.sphere(r, 10, 8), fur, x, y, z);
+  }
+  const head = pivot(body, 0, 2.55, 0.1);
+  part(head, G.sphere(0.62, 14, 10), fur, 0, 0, 0);
+  for (let i = 0; i < 3; i++) part(head, G.cone(0.14, 0.3, 5), fur, (i - 1) * 0.2, 0.58, -0.05, -0.3, 0, (i - 1) * 0.4);
+  part(head, G.sphere(0.46, 12, 10), face, 0, -0.05, 0.42, 0, 0, 0, [1, 0.85, 0.6]);
+  const brows = [];
+  for (const s of [-1, 1]) {
+    eye(head, s * 0.17, 0.05, 0.64, 0.11, -s * 0.2);
+    brows.push(part(head, G.box(0.26, 0.06, 0.06), dark, s * 0.17, 0.21, 0.66, 0, 0, s * 0.3));
+    part(head, G.cone(0.1, 0.42, 6), horn, s * 0.42, 0.42, 0, 0, 0, -s * 0.5);
+  }
+  const mouth = part(head, G.box(0.36, 0.1, 0.06), dark, 0, -0.22, 0.66);
+  for (const s of [-1, 1]) part(head, G.box(0.07, 0.08, 0.04), mat(0xffffff), s * 0.1, -0.17, 0.7);
+  // rote Ohrenschützer – ihm ist nämlich immer kalt
+  for (const s of [-1, 1]) part(head, G.sphere(0.16, 10, 8), mat(0xd83a3a), s * 0.58, 0.02, 0.05);
+  part(head, G.torus(0.6, 0.04, 4, 14, Math.PI), mat(0xd83a3a), 0, 0.02, 0.05, 0, 0, 0);
+  const arms = [];
+  for (const s of [-1, 1]) {
+    const a = pivot(body, s * 1.0, 2.0, 0);
+    part(a, G.sphere(0.3, 10, 8), fur, s * 0.15, -0.4, 0, 0, 0, 0, [1, 1.6, 1]);
+    part(a, G.sphere(0.28, 10, 8), face, s * 0.2, -0.95, 0.05);
+    arms.push(a);
+  }
+  root.userData.rig = { body, head, mouth, brows, legs, armL: arms[0], armR: arms[1] };
+  return root;
+}
+
+// Schneeball (klein zum Werfen, groß zum Rollen)
+export function makeSnowball(r = 0.4) {
+  const root = new THREE.Group();
+  part(root, G.sphere(r, 12, 9), mat(0xf6f8ff), 0, 0, 0);
+  for (let i = 0; i < 5; i++) part(root, G.sphere(r * 0.35, 6, 4), mat(0xe4ecfa), Math.cos(i * 2.5) * r * 0.75, Math.sin(i * 1.7) * r * 0.5, Math.sin(i * 2.5) * r * 0.75);
+  root.userData.rig = {};
+  return root;
+}

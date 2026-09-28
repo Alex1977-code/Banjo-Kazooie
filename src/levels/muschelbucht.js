@@ -251,6 +251,16 @@ export default {
       L.world.addCyl({ x, z, y: y - 0.5, r: 0.45, h: h + 0.5, camBlock: false, hazard: 1 });
     }
     L.apple(-4, 20);
+    // Goldfeder auf einer Felsnadel im Meer – nur vom Leuchtturm aus im Gleitflug
+    L.add(G.cyl(2.3, 3.6, 21, 7), M(58, -14, -58), 0x8a8478, 'rock', 0.4, { flat: true, shade: 0.12 });
+    L.add(G.cyl(2.3, 2.2, 0.4, 10), M(58, 6.9, -58), 0x5aa83a, 'ground', 0.4);
+    L.world.addCyl({ x: 58, z: -58, y: -14, r: 2.5, h: 21.3 });
+    L.feather('felsnadel', 58, 8.5, -58);
+    // Zeitrennen bei Käpt'n Barnabas über den Strand
+    L.raceCourse({
+      flag: [10, 30, 2.4], start: [6, 36, Math.PI / 2], target: 17, who: 'kapitaen',
+      points: [[16, 30], [30, 16], [36, 0], [24, 8], [10, 18], [-6, 26], [-12, 36], [2, 38]],
+    });
     L.apple(30, -24);
     L.apple(-20, -30);
     L.apple(LIGHT.x + Math.cos(lastA + 3.6) * 3.8, LIGHT.z + Math.sin(lastA + 3.6) * 3.8, topY);

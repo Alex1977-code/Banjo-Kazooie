@@ -23,10 +23,21 @@ Blechkäfern zu finden und dem Krötenkönig in seinem Turm das Handwerk zu lege
 | **Wurzelhügel** (Hub) | Brunos Dachsbau, Opa Tilo erklärt alles, Lotti Langsam tauscht Beeren gegen Extra-Herzen, Lernsteine für Hochsprung & Stampfer, Felsturm und rissige Steinplatte. Tore zu allen Welten. |
 | **Pilzwald** (1 Splitter) | Pauli Pilz gibt Tipps, Opa Eiche mit Wendel-Baumpilzen bis zur Krone, Hüpfpilze zur schwebenden Insel, Giftsumpf mit Seerosen und Wölkchen, Käferlichtung voller Blechkäfer, verlorenes Igelkind Stupsi und Boss Fürst Fliegenpilz im Hexenring (Sporenwellen, Sporenregen). |
 | **Muschelbucht** (4 Splitter) | Leuchtturm mit Wendeltreppe, Tauchgang zum Schiffswrack, Schatzsuche mit Käpt'n Barnabas, Kaktus-Banditen, Boss Käpt'n Knack, schwimmende Fässer. |
+| **Frostgipfel** (7 Splitter) | Iglu-Dorf mit Pinguin Pippo, rutschiger Eissee mit Eisloch, Schneemann Schnuppi sucht Nase, Hut und Schal, glitzernde Eisgrotte, Spiralweg mit Windböen auf den Gipfel, Lernstein **Gleitflug**, die Eisnadel und Boss Bibber der Schneeball-Yeti. |
 | **Krötenturm** (10 Splitter) | Aufstieg über die Außentreppe, Wölkchen-Flug zur Bonusinsel und Endkampf gegen König Krötus in drei Phasen (Goldmünzen, Bauchplatscher, Blechkäfer). |
 
-Insgesamt gibt es **15 Sonnensplitter**, fast **200 Beeren**, **10 Glühwürmchen** (alle fünf einer
-Welt ergeben einen Splitter) und Extra-Herzen für alle Beeren einer Welt.
+Insgesamt gibt es **19 Sonnensplitter**, über **250 Beeren**, **15 Glühwürmchen** (alle fünf einer
+Welt ergeben einen Splitter) und Extra-Herzen für alle Beeren einer Welt. Wer Krötus besiegt und
+danach alle 19 Splitter heimbringt, erlebt am Sonnenhügel ein eigenes **100-%-Ende**.
+
+**Zum Wiederspielen:**
+- **Goldfedern:** In Wurzelhügel, Pilzwald, Muschelbucht und Krötenturm liegt je eine Goldfeder an
+  einer Stelle, die man nur mit dem Gleitflug erreicht. Alle vier zusammen geben ein zusätzliches Herz.
+- **Zeitrennen:** In jeder Welt wartet jemand an einer Zielflagge (Lotti, Pauli, Käpt'n Barnabas,
+  Pippo, Wölkchen). Durch alle Ringe laufen, Bestzeit wird gespeichert, wer die Pokal-Zeit schafft,
+  bekommt einen Pokal.
+- **Fortschritt** im Pausemenü zeigt pro Welt, was noch fehlt: Splitter, Glühwürmchen, Beeren,
+  Federn und Rennen.
 
 ## Spielen
 
@@ -62,8 +73,8 @@ Im Spiel unter **„Fernseher & Controller“** stehen beide Wege noch einmal er
 | Pause | ⏸ oben rechts | Start | Esc |
 
 **Bewegungen:** Sprung, Flattersprung (in der Luft A halten), Rolle (B), Schnabelhieb (B in der
-Luft), sowie an Lernsteinen: **Hochsprung** (Z halten + A), **Stampfer** (Z in der Luft) und
-**Tauchen** (Z im Wasser).
+Luft), sowie an Lernsteinen: **Hochsprung** (Z halten + A), **Stampfer** (Z in der Luft),
+**Tauchen** (Z im Wasser) und **Gleitflug** (nach dem Flattern A weiter halten, mit dem Stick lenken).
 
 ## Technik
 
@@ -73,7 +84,7 @@ Luft), sowie an Lernsteinen: **Hochsprung** (Z halten + A), **Stampfer** (Z in d
   bilinearer Filterung, Blob-Schatten, Entfernungsnebel. Auflösung und „Pixel-Look“ in den Optionen.
 - **Lebendige Welt:** Bäume, Gras und Blumen wiegen sich im Wind (Vertex-Shader), Wasser mit sanften
   Wellen, Glitzern und Schaumrand am Ufer, Umgebungspartikel (Pollen, Schmetterlinge, Sporen, Gischt,
-  Asche) und Stimmungszonen, in denen sich Nebel und Licht weich verändern. Teure Extras erst ab „Retro“.
+  Schnee, Asche) und Stimmungszonen, in denen sich Nebel und Licht weich verändern. Teure Extras erst ab „Retro“.
 - **Sound komplett synthetisiert** (Web Audio): Effekte, Brabbel-Stimmen und eigene Musikstücke pro Welt,
   Hall pro Welt (Impulsantwort aus Rauschen), Umgebungsgeräusche, Richtungshören und dumpfer Klang
   unter Wasser.
@@ -86,8 +97,8 @@ controller.html       Handy-Controller für den TV-Modus
 src/engine/           Renderer, Eingabe (Touch/Gamepad/Tastatur/Remote), Kamera, Kollision, Audio,
                       Partikel, Shader-Effekte (fx.js: Wind, Wasser, Uferschaum)
 src/game/             Spielfigur, Modelle, Gegner & Objekte, Dialoge, Menüs, HUD, Speichern,
-                      Stimmungszonen (mood.js), Umgebungspartikel (ambient.js)
-src/levels/           Wurzelhügel, Pilzwald, Muschelbucht, Krötenturm (Datei nebelturm.js)
+                      Stimmungszonen (mood.js), Umgebungspartikel (ambient.js), Zeitrennen (race.js)
+src/levels/           Wurzelhügel, Pilzwald, Muschelbucht, Frostgipfel, Krötenturm (Datei nebelturm.js)
 vendor/               three.js, PeerJS, QR-Code-Generator (siehe vendor/LICENSES.md)
 tools/                Icon-Generator
 ```

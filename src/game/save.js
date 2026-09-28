@@ -15,7 +15,11 @@ export const DEFAULT_SETTINGS = {
 function fresh() {
   return {
     version: 1,
-    moves: { highjump: false, pound: false, dive: false },
+    moves: { highjump: false, pound: false, dive: false, glide: false },
+    feathers: {}, // Goldfedern (nur mit dem Gleitflug erreichbar)
+    times: {}, // Bestzeiten der Zeitrennen pro Welt
+    trophies: {}, // Pokale für geschaffte Zielzeiten
+    stats: {}, // Anzahl Splitter/Glühwürmchen/Beeren pro Welt (fürs Pausenmenü)
     shards: {},
     fireflies: {},
     berries: {},

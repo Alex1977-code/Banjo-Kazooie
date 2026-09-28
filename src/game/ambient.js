@@ -70,6 +70,15 @@ const KINDS = {
         s0: rand(0.2, 0.32), s1: 0.24, r: 0.75, gg: 0.92, b: 1, a: 0.75 };
     },
   },
+  snow: {
+    // Schneeflocken rieseln rund um Bruno
+    pool: 'puff', rate: 16, max: 80,
+    make(g, L, p) {
+      const [x, z] = around(p, 0, 18);
+      return { x, y: p.y + rand(6, 11), z, vx: 0.3 * g.fxWind, vy: rand(-1.4, -0.9), wob: 0.5, drag: 0.2, life: rand(6, 9), fadeIn: 1,
+        s0: rand(0.16, 0.24), s1: 0.14, r: 1, gg: 1, b: 1, a: 0.9 };
+    },
+  },
   wisps: {
     // Nebelschwaden ziehen über den Turm
     pool: 'puff', rate: 1.2, max: 12,

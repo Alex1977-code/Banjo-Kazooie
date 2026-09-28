@@ -12,6 +12,12 @@ export class Hud {
     this.bannerEl = $('#banner');
     this.titleEl = $('#level-title');
     this.promptEl = $('#prompt');
+    // Stoppuhr fürs Zeitrennen
+    this.raceEl = document.createElement('div');
+    this.raceEl.id = 'race';
+    this.raceEl.hidden = true;
+    this.raceEl.innerHTML = '<b></b><small></small>';
+    this.el.append(this.raceEl);
     this.air = $('#air');
     this.airFill = this.air.querySelector('.air-fill');
     this.toastT = 0;
@@ -51,6 +57,13 @@ export class Hud {
       setTimeout(() => el.classList.remove('bump'), 150);
     }
   }
+  setRace(main, sub = '') {
+    this.raceEl.hidden = main == null;
+    if (main == null) return;
+    this.raceEl.firstChild.textContent = main;
+    this.raceEl.lastChild.textContent = sub;
+  }
+
   setShards(n) { this.bump(this.shards, n); }
   setBerries(n, total) { this.bump(this.berries, total ? `${n}/${total}` : n); }
   setFireflies(n, total) {

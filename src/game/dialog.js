@@ -14,6 +14,10 @@ export const NAMES = {
   stein: 'Lernstein',
   pilz: 'Pauli Pilz',
   fuerst: 'Fürst Fliegenpilz',
+  pippo: 'Pippo',
+  schnuppi: 'Schnuppi',
+  bibber: 'Bibber',
+  wolke: 'Wölkchen',
   lotti: 'Lotti Langsam',
 };
 

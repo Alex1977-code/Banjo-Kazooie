@@ -10,6 +10,8 @@ const RUN = 9;
 const STEP = 0.5;
 const JUMP_V = 12.5;
 const HIGH_V = 18;
+const GLIDE_SPEED = 10.5; // Gleitflug: waagerecht
+const GLIDE_SINK = 2.2; // Gleitflug: so schnell sinkt man
 
 // Kikis Positionen relativ zu Brunos Oberkörper: im Rucksack, herausgereckt, nach vorn gebeugt
 const IN_BAG = new THREE.Vector3(0.05, 0.74, -0.62);
@@ -222,7 +224,7 @@ export class Player {
 
     const oldHead = this.pos.y + this.height;
     if (!this.swimming && !this.diving) {
-      if (!(this.state === 'pound' && this.stateT < 0.22) && this.state !== 'flutter') {
+      if (!(this.state === 'pound' && this.stateT < 0.22) && this.state !== 'flutter' && this.state !== 'glide') {
         this.vel.y = Math.max(-32, this.vel.y - GRAV * dt);
       }
     }
@@ -403,9 +405,11 @@ export class Player {
       const crouch = held(B.CROUCH);
       if (crouch && s !== 'crouch') this.setState('crouch');
       if (!crouch && s === 'crouch') this.setState('idle');
-      const max = (this.state === 'crouch' ? 2.5 : RUN) * wl;
-      this.accelerate(dt, wx, wz, wl, max, wl > 0 ? 55 : 40);
-      if (wl > 0.1) this.facing = dampAngle(this.facing, Math.atan2(wx, wz), 14, dt);
+      // Glatteis: langsam anfahren, weit rutschen
+      const ice = game.level.slipperyAt?.(this.pos.x, this.pos.z, this.pos.y);
+      const max = (this.state === 'crouch' ? 2.5 : ice ? RUN * 1.15 : RUN) * wl;
+      this.accelerate(dt, wx, wz, wl, max, ice ? (wl > 0 ? 9 : 2.5) : wl > 0 ? 55 : 40);
+      if (wl > 0.1) this.facing = dampAngle(this.facing, Math.atan2(wx, wz), ice ? 6 : 14, dt);
       if (this.state !== 'crouch') this.state = this.speedH > 0.6 ? 'run' : 'idle';
 
       // zu steil? runterrutschen
@@ -445,13 +449,21 @@ export class Player {
       game.audio.play('flutter');
     }
     if (this.state === 'flutter') {
-      if (!held(B.JUMP) || this.stateT > 1.15) this.setState('fall');
+      // Flattern vorbei: wer A weiter hält und den Gleitflug kann, segelt weiter
+      if (!held(B.JUMP)) this.setState('fall');
+      else if (this.stateT > 1.15) this.startGlide(held);
       else {
         const target = this.stateT < 0.55 ? 3.4 : 0.6;
         this.vel.y += (target - this.vel.y) * Math.min(1, dt * 9);
         if (Math.floor(this.stateT * 10) !== Math.floor((this.stateT - dt) * 10) && this.stateT > 0.5) game.audio.play('flutter');
         if (Math.random() < 0.3) game.particles.emit('feather', this.pos.x, this.pos.y + 2.4, this.pos.z, 1);
       }
+    }
+
+    // Gleitflug: nach dem Flattern in der Luft erneut A drücken und halten
+    if (pressed(B.JUMP) && this.moves.glide && !this.canFlutter && ['jump', 'fall', 'highjump', 'longjump', 'peck'].includes(this.state) && this.vel.y < 6) {
+      this.bufferJump = 0;
+      this.startGlide(held);
     }
 
     // Schnabel-Attacke in der Luft
@@ -480,11 +492,34 @@ export class Player {
       return;
     }
 
+    if (this.state === 'glide') {
+      if (!held(B.JUMP)) this.setState('fall');
+      else {
+        // lenken ja, bremsen nein – Kiki segelt immer vorwärts
+        if (wl > 0.1) this.facing = dampAngle(this.facing, Math.atan2(wx, wz), 2.4, dt);
+        this.vel.x = damp(this.vel.x, Math.sin(this.facing) * GLIDE_SPEED, 3, dt);
+        this.vel.z = damp(this.vel.z, Math.cos(this.facing) * GLIDE_SPEED, 3, dt);
+        this.vel.y += (-GLIDE_SINK - this.vel.y) * Math.min(1, dt * 5);
+        if (Math.floor(this.stateT * 1.4) !== Math.floor((this.stateT - dt) * 1.4)) game.audio.play('glide');
+        if (Math.random() < dt * 6) game.particles.emit('feather', this.pos.x, this.pos.y + 2.3, this.pos.z, 1);
+        return;
+      }
+    }
+
     const airMax = this.state === 'flutter' ? 6 : this.state === 'longjump' ? 11 : 8.5;
     this.accelerate(dt, wx, wz, wl, airMax * wl, this.state === 'longjump' ? 10 : 22);
     if (wl > 0.1) this.facing = dampAngle(this.facing, Math.atan2(wx, wz), 7, dt);
     if (['jump', 'highjump', 'longjump'].includes(this.state) && this.vel.y < -2) this.state = this.state === 'longjump' ? 'longjump' : 'fall';
     if (this.state === 'idle' || this.state === 'run' || this.state === 'crouch' || this.state === 'roll') this.state = 'fall';
+  }
+
+  startGlide(held) {
+    if (!this.moves.glide || !held(B.JUMP)) {
+      this.setState('fall');
+      return;
+    }
+    this.setState('glide');
+    this.game.audio.play('glide');
   }
 
   accelerate(dt, wx, wz, wl, max, accel) {
@@ -605,6 +640,15 @@ export class Player {
       armUp = 2.9;
       armSpread = 0.15;
       legA = Math.sin(t * 16) * 0.5;
+    } else if (s === 'glide') {
+      // Kiki ganz ausgestreckt, Bruno hängt wie ein Drachenflieger darunter
+      kikiTarget = 1;
+      kikiFlap = 0.08;
+      armUp = 2.95;
+      armSpread = 0.05;
+      bodyPitch = 0.35;
+      legA = -0.5 + Math.sin(t * 3) * 0.1;
+      bodyRoll = Math.sin(t * 1.7) * 0.08;
     } else if (s === 'roll') {
       hipsY = 0.62;
       pitchAll = Math.min(1, this.stateT / 0.45) * Math.PI * 2 * 1.5;

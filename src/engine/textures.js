@@ -71,6 +71,45 @@ function groundTex() {
   return toTexture(c);
 }
 
+// Schnee: fast weiß mit weichen Verwehungen und Glitzerpunkten
+function snowTex() {
+  const S = 64, c = canvas(S), r = rng(17);
+  const ctx = pixels(c, (x, y) => {
+    const n = tileNoise(x, y, S, 5, 21) * 0.6 + tileNoise(x, y, S, 12, 23) * 0.4;
+    const v = 222 + n * 33;
+    return [v - 6, v, 255];
+  });
+  for (let i = 0; i < 40; i++) {
+    ctx.fillStyle = r() < 0.5 ? 'rgba(255,255,255,0.9)' : 'rgba(180,210,255,0.5)';
+    ctx.fillRect(Math.floor(r() * S), Math.floor(r() * S), 1, 1);
+  }
+  return toTexture(c);
+}
+
+// Eis: bläulich mit hellen Rissen
+function iceTex() {
+  const S = 64, c = canvas(S), r = rng(29);
+  const ctx = pixels(c, (x, y) => {
+    const n = tileNoise(x, y, S, 4, 31);
+    const v = 200 + n * 50;
+    return [v * 0.86, v * 0.95, v];
+  });
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 7; i++) {
+    let x = r() * S, y = r() * S;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    for (let k = 0; k < 4; k++) {
+      x += (r() - 0.5) * 18;
+      y += (r() - 0.5) * 18;
+      ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  return toTexture(c);
+}
+
 function sandTex() {
   const S = 64, c = canvas(S);
   const r = rng(5);
@@ -360,6 +399,8 @@ export function makeTextures() {
     tiles: tilesTex(),
     stone: stoneTex(),
     water: waterTex(),
+    snow: snowTex(),
+    ice: iceTex(),
     mushroom: mushroomTex(),
     shell: shellTex(),
     portal: portalTex(),

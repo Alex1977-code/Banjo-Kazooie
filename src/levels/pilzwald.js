@@ -257,6 +257,15 @@ export default {
     L.berryRing(OAK.x, OAK.z, 9, 6);
     L.berryLine(4, 32, -22, 14, 5);
     L.fireflyShard('gluehwuermchen', 3, 32);
+    // Goldfeder auf einer schwebenden Pilzinsel – von Opa Eiches Krone aus erreichbar
+    L.floatingIsland(-30, -36, 16, { color: 0x6a8a3a });
+    L.mushroomDeco(-31.5, -35, { y: 16, h: 1.4, r: 0.9, color: 0xf06aa0, collide: false });
+    L.feather('insel', -29, 17.3, -37);
+    // Zeitrennen bei Pauli Pilz
+    L.raceCourse({
+      flag: [9, 53, -2.4], start: [2, 53, Math.PI], target: 16, who: 'pilz',
+      points: [[3, 40], [4, 28], [13, 17], [24, 10], [16, 0], [2, 4], [-10, 12], [-8, 26], [-2, 40]],
+    });
 
     // ---------- Ausgang ----------
     L.portal(0, 68, { rot: Math.PI, to: 'hub', spawn: 'from-pilz', label: 'Wurzelhügel', color: 0xffd24a });
